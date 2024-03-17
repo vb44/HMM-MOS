@@ -1,0 +1,23 @@
+---
+# Test setup.
+scanPath: /media/vb/Gift/DOALS/small_town_simulation/small_town_simulation/
+posePath: /media/vb/Gift/DOALS/small_town_simulation/small_town_simulation_poses
+startScan: 1
+endScan: 1640
+minRange: 0.5
+maxRange: 20
+outputFile: false
+scanNumsToPrint: []
+outputFileName:
+outputLabels: true
+outputLabelFolder: /home/vb/Documents/PhD/projects/changePointDetectionV7Conc2/results/labels/smallTown/
+
+# Configuration parameters.
+voxelSize: 0.2
+occupancySigma: 0.2
+freeSigma: 0.2
+beliefThreshold: 0.3
+convSize: 5
+localWindowSize: 5
+globalWindowSize: 300
+offset: 0

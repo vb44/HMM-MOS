@@ -1,0 +1,23 @@
+---
+# Test setup.
+scanPath: /home/vb/Documents/PhD/datasets/sipailou-livox-kitti/07/velodyne/
+posePath: /home/vb/Documents/PhD/datasets/sipailou-livox-kitti/07/poses.txt
+startScan: 1
+endScan: 3553
+minRange: 3
+maxRange: 50
+outputFile: false
+scanNumsToPrint: []
+outputFileName:
+outputLabels: true
+outputLabelFolder: /home/vb/Documents/PhD/projects/changePointDetectionV7/cpp/results/labels/sipailou_07/
+
+# Configuration parameters.
+voxelSize: 0.2
+occupancySigma: 0.2
+freeSigma: 0.2
+beliefThreshold: 0.3
+convSize: 5
+localWindowSize: 3
+globalWindowSize: 300
+offset: 0

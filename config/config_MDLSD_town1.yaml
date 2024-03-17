@@ -1,0 +1,24 @@
+---
+# File paths
+scanPath: /media/vb/Gift/MDLSD/processed/town_1/scans/
+# posePath: /media/vb/Gift/MDLSD/processed/town_1/town_1_state
+posePath: /home/vb/Documents/public_repositories/SiMpLE/build/town1_2
+startScan: 1
+endScan: 3000
+minRange: 0.5
+maxRange: 150
+outputFile: false
+scanNumsToPrint: []
+outputFileName: 
+outputLabels: true
+outputLabelFolder: /home/vb/Documents/PhD/projects/changePointDetectionV7/cpp/results/labels/town_1/
+
+# Configuration parameters
+voxelSize: 0.2
+occupancySigma: 0.5
+freeSigma: 0.5
+beliefThreshold: 0.9
+convSize: 5
+localWindowSize: 3
+globalWindowSize: 10
+offset: 0
