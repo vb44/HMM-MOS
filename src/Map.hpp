@@ -56,18 +56,22 @@ class Map : public Scan
             Eigen::Vector3d xHat = {1,0,0};
 
         };
-        
+
+        using pointsIterator = std::vector<Eigen::Vector3i>::const_iterator;
+
         int globalWinLen_;
         double normDistOccDen_, normDistFreeDen_;
         int scanNum_;
         int convSize_;
         int edge_;
         int nBins_;
-        // tsl::robin_map<Voxel, MapVoxelState, VoxelHash> map_;
-        ankerl::unordered_dense::map<Voxel, MapVoxelState, VoxelHash> map_; 
+        tsl::robin_map<Voxel, MapVoxelState, VoxelHash> map_;
+        // ankerl::unordered_dense::map<Voxel, MapVoxelState, VoxelHash> map_; 
 
         std::vector<Eigen::Vector3i> scanDynamicVoxels_;
         std::vector<Eigen::Vector3i> prevScanDynamicVoxels_;
+        std::vector<Eigen::Vector3i> scanHcDynamicVoxels_;
+        std::vector<Eigen::Vector3i> prevScanHcDynamicVoxels_;
 
         void addPoints(const std::vector<Eigen::Vector3i> &points);
         void removeVoxelsOutsideWindowAndMaxRange();

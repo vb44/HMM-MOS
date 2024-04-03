@@ -4,6 +4,7 @@
 #include "utils.hpp"
 
 #include <boost/circular_buffer.hpp>
+#include <chrono>
 
 int main(int argc, char** argv)
 {
@@ -37,7 +38,8 @@ int main(int argc, char** argv)
     unsigned int numScans = scanFiles.size();
     
     // Read the pose estimates in KITTI format.
-    std::vector<std::vector<double> > poseEstimates = readPoseEstimates(configParser.posePath); 
+    std::vector<std::vector<double> > poseEstimates = 
+                                      readPoseEstimates(configParser.posePath); 
     if (scanFiles.size() != poseEstimates.size())
     {
         std::cerr << "The number of scans (" << scanFiles.size() 
@@ -69,20 +71,25 @@ int main(int argc, char** argv)
     // ------------------------------------------------------------------------
     // Main loop.
     // ------------------------------------------------------------------------
+    bool printTimes = false;
     for (unsigned int scanNum = configParser.startScan-1;
                       scanNum < configParser.endScan; scanNum++)
     {
         // std::cout << scanNum << std::endl;
+        auto startScanTimer = std::chrono::high_resolution_clock::now();
 
         // Read the new scan.
         scan.readScan(scanFiles[scanNum], poseEstimates[scanNum]);
+        auto finishReadScan = std::chrono::high_resolution_clock::now();
 
         // Voxelize the scan to construct the occupancy map and find all the
         // observed voxels.
         scan.voxelizeScan();
-        
+        auto finishVoxelizeScan = std::chrono::high_resolution_clock::now();
+
         // Update the map.
         map.update(scan, scanNum);
+        auto finishMapUpdate = std::chrono::high_resolution_clock::now();
 
         // for (auto &x : scan.observedVoxels)
         //     std::cout << x.transpose() << std::endl;
@@ -93,6 +100,19 @@ int main(int argc, char** argv)
             // std::cout << "here " << scanNum << std::endl;
             // Determine dynamic voxels.
             map.findDynamicVoxels(scan, scanHistory);
+            auto finishFindDynamicVoxel = std::chrono::high_resolution_clock::now();
+            
+            if (printTimes)
+            {
+                std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(finishReadScan - startScanTimer).count() << " "
+                          << std::chrono::duration_cast<std::chrono::milliseconds>(finishVoxelizeScan - finishReadScan).count() << " "
+                          << std::chrono::duration_cast<std::chrono::milliseconds>(finishMapUpdate - finishVoxelizeScan).count() << " "
+                          << std::chrono::duration_cast<std::chrono::milliseconds>(finishFindDynamicVoxel - finishMapUpdate).count() << std::endl;
+                // std::cout << "readScan      : " << std::chrono::duration_cast<std::chrono::milliseconds>(finishReadScan - startScanTimer).count() << std::endl;
+                // std::cout << "voxelizeScan  : " << std::chrono::duration_cast<std::chrono::milliseconds>(finishVoxelizeScan - finishReadScan).count() << std::endl;
+                // std::cout << "mapUpdate     : " << std::chrono::duration_cast<std::chrono::milliseconds>(finishMapUpdate - finishVoxelizeScan).count() << std::endl;
+                // std::cout << "dynamicVoxel  : " << std::chrono::duration_cast<std::chrono::milliseconds>(finishFindDynamicVoxel - finishMapUpdate).count() << std::endl;
+            }
         } else
         {
             scanHistory.push_back(scan);
@@ -102,10 +122,18 @@ int main(int argc, char** argv)
         {
             if (configParser.scanNumsToPrint.contains(scanNum+1-configParser.offset))
             {
-                std::cout << scanFiles[scanNum] << std::endl;
+                // std::cout << scanFiles[scanNum] << std::endl;
                 scan.writeFile(outFile, scanNum);
                 // writeFile(scanNum, scan, outFile);
             }
+        }
+
+        // --------------------------------------------------------------------
+        // Write labels.
+        // --------------------------------------------------------------------
+        if (configParser.outputLabels)
+        {
+            scan.writeLabel(scanNum);
         }
 
         // std::cout << scanNum << " "  << scan.occupiedVoxels.size() << " " << scan.ptsOccupied.size() << " " <<  scan.observedVoxels.size() <<  " " << map.getMapSize() << std::endl;

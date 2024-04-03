@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <boost/circular_buffer.hpp>
+#include <iomanip>
 
 #include "ConfigParser.hpp"
 #include "utils.hpp"
@@ -25,10 +26,6 @@ class Scan
 
         ~Scan();
 
-        void clear();
-
-
-
         // void removeVoxelsOutsideWindow(const unsigned int scanNum);        
         void removeVoxelsOutsideMaxRange();
         // void removeVoxelsOutsideWindowAndMaxRange();
@@ -40,13 +37,17 @@ class Scan
 
         bool checkIfEntryExists(const Voxel &voxel);
         void setDynamic(Voxel &voxel);
-        void setConvScore(Voxel &voxel, double convScore);
+        void setDynamicHighConfidence(Voxel &voxel);
+        void setConvScore(Voxel voxel, double convScore);
         void setConvScoreOverWindow(Voxel &voxel, double convScore);
         double getConvScore(Voxel &voxel);
         double getConvScoreOverWindow(Voxel &voxel);
         bool getDynamic(Voxel &voxel);
+        bool getDynamicHighConfidence(Voxel &voxel);
+        // double getTransitionProb(Voxel &voxel);
         std::vector<int> getIndicies(Voxel &voxel);
         void writeFile(std::ofstream &outFile, unsigned int scanNum);
+        void writeLabel(unsigned int scanNum);
         void printVoxels();
 
         Eigen::Matrix4d sensorPose;
@@ -62,6 +63,7 @@ class Scan
 
 
         // int scanNum;
+        double dynThreshold;
 
 
     protected:
@@ -89,6 +91,7 @@ class Scan
         struct ScanVoxelState
         {
             bool isDynamic = false;
+            bool isDynamicHighConfidence = false;
 
             // Point cloud indicies in the current voxel.
             std::vector<unsigned int> pointIndicies;
@@ -100,6 +103,7 @@ class Scan
             double convScoreOverWindow = 0; 
         };
         int dim_;
+        std::string outputLabelFolder_;
         Eigen::MatrixXd scanPts_;
         std::vector<Eigen::Vector3d> scanPtsTf_;
         boost::circular_buffer<std::vector<Eigen::Vector3d> > ptsOccupiedHistory_;
@@ -107,10 +111,8 @@ class Scan
         void addPointsWithIndex();
     
         // Voxelized scan.         
-        // tsl::robin_map<Voxel, ScanVoxelState, VoxelHash> scan_;
-        ankerl::unordered_dense::map<Voxel, ScanVoxelState, VoxelHash> scan_; 
-        // tsl::robin_map<Voxel, ScanVoxelState, VoxelHash> map_;
-        // ankerl::unordered_dense::map<Voxel, VoxelState, VoxelHash> map_;
+        tsl::robin_map<Voxel, ScanVoxelState, VoxelHash> scan_;
+        // ankerl::unordered_dense::map<Voxel, ScanVoxelState, VoxelHash> scan_; 
 };
 
 #endif
