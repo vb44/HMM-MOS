@@ -175,17 +175,17 @@ void Scan::findObservedVoxels()
                 //                 pow((sY-y0)*voxelSize_,2) + 
                 //                 pow((sZ-z0)*voxelSize_,2);
                 // if (ptNorm <= (maxRange_*maxRange_) && !occFlag)// && n >= pow(3,2))
-                if (ptNorm <= (maxRange_*maxRange_) && !occFlag)// && n >= pow(3,2))
+                if (ptNorm <= (maxRange_*maxRange_))// && !occFlag)// && n >= pow(3,2))
                 {
                     ptsObs.push_back({x0,y0,z0});
                 }
                 
                 // if (ptNorm > (minRange_*minRange_) && scan_.contains({x0,y0,z0}))
-                if (!occFlag && scan_.contains({x0,y0,z0}))
-                {
-                    occFlag = true;
-                    // break;
-                }
+                // if (!occFlag && scan_.contains({x0,y0,z0}))
+                // {
+                //     occFlag = true;
+                //     break;
+                // }
                 // Update the next voxel to be traversed.
                 x1 -= dx; if (x1 < 0) { x1 += dm; x0 += sx; } 
                 y1 -= dy; if (y1 < 0) { y1 += dm; y0 += sy; } 
