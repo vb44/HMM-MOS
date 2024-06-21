@@ -83,7 +83,7 @@ void Map::update(Scan &scan, unsigned int scanNum)
                  0, exp(-map_[voxel].closestDistance*normDistOccDen_), 0,
                  0, 0, (1 - exp(-map_[voxel].closestDistance*normDistFreeDen_));
 
-            Eigen::Vector3d alpha = B * qcd.stateTransitionMatrix.transpose() 
+            Eigen::Vector3d alpha = B * qcd.stateTransitionMatrix 
                                       * map_[voxel].xHat;
             map_[voxel].xHat = alpha/alpha.sum();
             map_[voxel].scanLastSeen = scanNum;

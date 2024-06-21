@@ -64,9 +64,9 @@ int main(int argc, char** argv)
     map.qcd.numStates = 3;
     map.qcd.stateTransitionMatrix.resize(map.qcd.numStates,
                                          map.qcd.numStates);
-    map.qcd.stateTransitionMatrix << 0.99, 0.005, 0.005,
-                                     0.00, 0.995, 0.005,
-                                     0.00, 0.005, 0.995;
+    map.qcd.stateTransitionMatrix << 0.99,  0.00,  0.00,
+                                     0.005, 0.995, 0.005,
+                                     0.005, 0.005, 0.995;
 
     // ------------------------------------------------------------------------
     // Main loop.
