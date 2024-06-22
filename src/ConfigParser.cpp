@@ -4,7 +4,7 @@ ConfigParser::ConfigParser(int argc, char** yamlFilePath)
 {
     if (argc != 2)
     {
-        std::cerr << "Usage: ./qcdmos config_file.yaml" << std::endl;
+        std::cerr << "Usage: ./hmmMOS config_file.yaml" << std::endl;
         exit(EXIT_FAILURE);
     }
     yamlFilePath_ = yamlFilePath[1];
@@ -32,6 +32,7 @@ int ConfigParser::parseConfig()
         voxelSize = configFromYaml["voxelSize"].as<double>();
         minRange = configFromYaml["minRange"].as<double>();
         maxRange = configFromYaml["maxRange"].as<double>();
+        minOtsu = configFromYaml["minOtsu"].as<double>();
         outputFile = configFromYaml["outputFile"].as<bool>();
         outputLabels = configFromYaml["outputLabels"].as<bool>();
         scanPath = configFromYaml["scanPath"].as<std::string>();

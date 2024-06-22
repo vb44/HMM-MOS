@@ -1,23 +1,24 @@
 #include "Map.hpp"
 
 Map::Map(const ConfigParser &config)
-    : Scan(config)
+    : globalWinLen_(config.globalWindowSize)
+    , maxRange_(config.maxRange)
+    , minRange_(config.minRange)
+    , voxelSize_(config.voxelSize)
+    , convSize_(config.convSize)
+    , minOtsu_(config.minOtsu)
+    , nBins_(100) // Hardcoded - used for histogram thresholding.
 {
-    globalWinLen_ = config.globalWindowSize;
-    qcd.beliefThreshold = config.beliefThreshold;
-    qcd.sigFree = config.freeSigma;
-    qcd.sigOcc = config.occupancySigma;
-    maxRange_ = config.maxRange;
-    minRange_ = config.minRange;
-    voxelSize_ = config.voxelSize;
-    convSize_ = config.convSize;
+    hmmConfig.beliefThreshold = config.beliefThreshold;
+    hmmConfig.sigFree = config.freeSigma;
+    hmmConfig.sigOcc = config.occupancySigma;
+
+    // Convolution edge size.
     edge_ = (convSize_-1)/2;
 
-    normDistOccDen_ = 1/(2*pow(qcd.sigOcc, 2));
-    normDistFreeDen_ = 1/(2*pow(qcd.sigFree, 2));
-
-    // Hardcoded parameters.
-    nBins_ = 100; // Used for histogram thresholding.
+    // Pre-compute the convolution computation constants.
+    normDistOccDen_ = 1/(2*pow(hmmConfig.sigOcc, 2));
+    normDistFreeDen_ = 1/(2*pow(hmmConfig.sigFree, 2));
 }
 
 Map::~Map()
@@ -27,7 +28,8 @@ Map::~Map()
 
 void Map::addPoints(const std::vector<Eigen::Vector3i> &points)
 {
-    std::for_each(points.cbegin(), points.cend(), [&](const auto &point) {
+    std::for_each(points.cbegin(), points.cend(), [&](const auto &point)
+    {
         if (map_.contains(point))
         {
             map_[point].currentStateScan = scanNum_;
@@ -40,41 +42,48 @@ void Map::addPoints(const std::vector<Eigen::Vector3i> &points)
     });
 }
 
+void Map::convertToKdTreeContainer(std::vector<Eigen::Vector3d> &pts)
+{
+    size_t pcLength = pts.size();
+    pcForKdTree_.pts.resize(pcLength);
+
+    tbb::parallel_for(
+    tbb::blocked_range<int>(0, pcLength),
+    [&](tbb::blocked_range<int> r)
+    { 
+        for (size_t i = r.begin(); i < r.end(); i++)
+        {
+            pcForKdTree_.pts[i].x = pts[i](0);
+            pcForKdTree_.pts[i].y = pts[i](1);
+            pcForKdTree_.pts[i].z = pts[i](2);        
+        } 
+    });
+}
+
 void Map::update(Scan &scan, unsigned int scanNum)
 {
     scanNum_ = scanNum;
-    sensorPose = scan.sensorPose;
+    sensorPose_ = scan.sensorPose;
 
     // Construct a KD-Tree of the measurements.
-    convertToPointCloudKdTree(scan.ptsOccupiedOverWindow);
+    convertToKdTreeContainer(scan.ptsOccupiedOverWindow);
     my_kd_tree_t *ptCloudKdTree = new my_kd_tree_t(3, pcForKdTree_, {10});
 
     // Update the observed voxels in the map.
     addPoints(scan.observedVoxels);
 
-    // std::vector<Eigen::Vector3i> pointsObservedUnique;
-    // for (const auto &x : map_)
-    // {
-    //     if (x.second.currentStateScan == scanNum)
-    //         pointsObservedUnique.push_back(x.first);
-    // }
-    // tbb::parallel_for(
-    // tbb::blocked_range<int>(0,scan.observedVoxels.size()),
-    // [&](tbb::blocked_range<int> r)
     tbb::parallel_for(
     tbb::blocked_range<pointsIterator>(scan.observedVoxels.cbegin(),scan.observedVoxels.cend()),
     [&](tbb::blocked_range<pointsIterator> r)
     {
         for (const auto &voxel : r)
-        {
-            
+        {   
             size_t numResults = 1;
             uint32_t retIndex;
             double pt[] = {voxel.coeffRef(0)*voxelSize_,
                            voxel.coeffRef(1)*voxelSize_,
                            voxel.coeffRef(2)*voxelSize_};
-            ptCloudKdTree->knnSearch(&pt[0], numResults, &retIndex,
-                                     &map_[voxel].closestDistance);
+            ptCloudKdTree->knnSearch(&pt[0], numResults, &retIndex, &map_[voxel].closestDistance);
             // map_[voxel].closestDistance = outDistSqr;
             
             // Update voxel likelihoods.
@@ -83,23 +92,20 @@ void Map::update(Scan &scan, unsigned int scanNum)
                  0, exp(-map_[voxel].closestDistance*normDistOccDen_), 0,
                  0, 0, (1 - exp(-map_[voxel].closestDistance*normDistFreeDen_));
 
-            Eigen::Vector3d alpha = B * qcd.stateTransitionMatrix 
-                                      * map_[voxel].xHat;
+            Eigen::Vector3d alpha = B * hmmConfig.stateTransitionMatrix * map_[voxel].xHat;
             map_[voxel].xHat = alpha/alpha.sum();
             map_[voxel].scanLastSeen = scanNum;
             
             // Update the voxel state if the probability of being in that state is greater than the predefined threshold.
-            // std::vector<double> vec(voxelMap.map_[pointsObservedUnique[i]].xHat.data(), voxelMap.map_[pointsObservedUnique[i]].xHat.data() + qcdParams.numStates);                
-            // double maxElement = *std::max_element(&vec[0], &vec[0]+qcdParams.numStates);
-            // int maxElementIndex = std::find(&vec[0], &vec[0]+qcdParams.numStates, maxElement) - &vec[0];
+            // std::vector<double> vec(voxelMap.map_[pointsObservedUnique[i]].xHat.data(), voxelMap.map_[pointsObservedUnique[i]].xHat.data() + hmmConfigParams.numStates);                
+            // double maxElement = *std::max_element(&vec[0], &vec[0]+hmmConfigParams.numStates);
+            // int maxElementIndex = std::find(&vec[0], &vec[0]+hmmConfigParams.numStates, maxElement) - &vec[0];
 
-            int maxElementIndex = map_[voxel].xHat(0) >
-                                  map_[voxel].xHat(1) ? 0 : 1;
-            maxElementIndex = map_[voxel].xHat(2) > 
-                              map_[voxel].xHat(maxElementIndex) ? 2 : maxElementIndex;
+            int maxElementIndex = map_[voxel].xHat(0) > map_[voxel].xHat(1) ? 0 : 1;
+            maxElementIndex = map_[voxel].xHat(2) > map_[voxel].xHat(maxElementIndex) ? 2 : maxElementIndex;
             double maxElement = map_[voxel].xHat(maxElementIndex);
 
-            if (maxElement > qcd.beliefThreshold)// && maxElement != voxelStates[voxelNum].currentState[0]
+            if (maxElement > hmmConfig.beliefThreshold)// && maxElement != voxelStates[voxelNum].currentState[0]
             { 
                 // Check for a change in state.
                 // Looking for a change in state from free to occupied and vice versa.
@@ -112,13 +118,12 @@ void Map::update(Scan &scan, unsigned int scanNum)
 
                 // Save the current state and the time it was observed.
                 map_[voxel].currentState = maxElementIndex;
-                // voxelMap.map_[pointsObservedUnique[i]].currentStateScan = scanNum;
             }
             // Update the scan the last time the voxel was observed.
             map_[voxel].currentStateScan = scanNum; 
         }
     });
-    // Remove map points outside the maximum range and the frame sliding window.
+    // Remove map points outside the maximum range and the frame sliding local window.
     removeVoxelsOutsideWindowAndMaxRange();
 
     delete ptCloudKdTree;
@@ -136,9 +141,9 @@ void Map::removeVoxelsOutsideWindowAndMaxRange()
     double ptDiffX, ptDiffY, ptDiffZ;
     for (const auto &[pt, state] : map_)
     {
-        ptDiffX = pt.coeffRef(0)*voxelSize_-sensorPose.coeffRef(0,3);
-        ptDiffY = pt.coeffRef(1)*voxelSize_-sensorPose.coeffRef(1,3);
-        ptDiffZ = pt.coeffRef(2)*voxelSize_-sensorPose.coeffRef(2,3);
+        ptDiffX = pt.coeffRef(0)*voxelSize_-sensorPose_.coeffRef(0,3);
+        ptDiffY = pt.coeffRef(1)*voxelSize_-sensorPose_.coeffRef(1,3);
+        ptDiffZ = pt.coeffRef(2)*voxelSize_-sensorPose_.coeffRef(2,3);
         ptNorm = (ptDiffX*ptDiffX) + (ptDiffY*ptDiffY) + (ptDiffZ*ptDiffZ); 
         if (ptNorm  > ((maxRange_*2)*(maxRange_*2)) || 
            (state.scanLastSeen > globalWinLen_ && 
@@ -149,13 +154,13 @@ void Map::removeVoxelsOutsideWindowAndMaxRange()
     }
     
     for (const auto &x : ps)
+    {
         map_.erase(x);
+    }
 }
 
 void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistory)
 {
-    // std::cout << scan.occupiedVoxels.size() << std::endl; exit(1);
-    // std::vector<double> tempScores(scan.occupiedVoxels.size(),0.0);
     tbb::parallel_for(
     tbb::blocked_range<pointsIterator>(scan.occupiedVoxels.cbegin(), scan.occupiedVoxels.cend()),
     [&](tbb::blocked_range<pointsIterator> r)
@@ -240,7 +245,6 @@ void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistor
     Eigen::VectorXd binCounts = Eigen::VectorXd::Zero(nBins_);
     Eigen::VectorXd edges;
     findHistogramCounts(nBins_, scoresOverWindow, binCounts, edges);
-    // findHistogramCounts(nBins, scores, binCounts, edges);
     int level = otsu(binCounts);    
     double thresholdLimit = 0;
     scan.dynThreshold = 0;
@@ -248,71 +252,31 @@ void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistor
     {
         thresholdLimit = edges(level-1);
         scan.dynThreshold = thresholdLimit;
-        // thresholdLimit = 15;
         for (unsigned int j = 0; j < scan.occupiedVoxels.size(); j++)
         {
             if (scan.getConvScoreOverWindow(scan.occupiedVoxels[j]) > thresholdLimit)
             {
                 scan.setDynamicHighConfidence(scan.occupiedVoxels[j]);
-                // scanDynamicVoxels_.push_back(scan.occupiedVoxels[j]);
             }
         }
     }
 
-    // for (auto x : prevScanDynamicVoxels_)
-    // {
-    //     scan.setDynamic(x);
-    // }
-
-    // for (auto x : scanHcDynamicVoxels_)
-    // {
-    //     scan.setDynamic(x);
-    // }
-    // scanHcDynamicVoxels_.clear();
-    // for (auto x : scan.occupiedVoxels)
-    // {
-    //     if (scan.getDynamic(x))
-    //     {
-    //         scanHcDynamicVoxels_.push_back(x);
-    //         // prevScanHcDynamicVoxels_.push_back(x);
-    //     }
-    // }
-
-       // scanDynamicVoxels_.clear();
-    // Save the high confidence dynamic detections to be used for the next scan.
-
+    // Set the previously dynamic scans to be dynamic if they exist in the
+    // current scan and still have some confidence of being dynamic.
     for (auto x: prevScanDynamicVoxels_)
     {
         // if (scan.checkIfEntryExists(x) && scan.getConvScoreOverWindow(x) > 0)
         // if (prevScanOccupancy.CheckIfEntryExists(x) && prevScanOccupancy.map_[x].convScore > 3)
-        if (scan.checkIfEntryExists(x) && scan.getConvScoreOverWindow(x) > 3)
+        if (scan.checkIfEntryExists(x) && scan.getConvScoreOverWindow(x) > minOtsu_)
         {
             scan.setDynamicHighConfidence(x);
         }
     }
 
-    // prevScanDynamicVoxels_.clear();
-    // for (auto x : scan.occupiedVoxels)
-    // {
-    //     if (scan.getDynamic(x))
-    //     {
-    //         prevScanDynamicVoxels_.push_back(x);
-    //         // voxelMap.map_[x.first].isDynamic = true;
-    //     } 
-    //     // else
-    //     // {
-    //     //     voxelMap.map_[x.first].isDynamic = false;
-
-    //     // }
-    // }
-
     // Region growing.
-    int dilSize = convSize_;
-    Eigen::Vector3i p;
-
-    // Perform a dilation.
+    // Perform a nearest neighbour dilation.
     scanDynamicVoxels_.clear();
-    dilSize = 3;
+    int edge = 1; // Nearest neighbouring cells.
     for (auto &vox : scan.occupiedVoxels)
     {
         if (scan.getDynamicHighConfidence(vox))
@@ -320,7 +284,6 @@ void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistor
             int x = vox(0);
             int y = vox(1);
             int z = vox(2);
-            int edge = (dilSize-1)/2;
             for (int i = x - edge; i < x + edge + 1; ++i)
             {
                 for (int j = y - edge; j < y + edge + 1; ++j)
@@ -342,24 +305,6 @@ void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistor
         }
     }
 
-
-    // for (auto x : prevScanHcDynamicVoxels_)
-    // {
-    //     if (scan.checkIfEntryExists(x))
-    //     {
-    //         scan.setDynamic(x);
-    //     }
-    // }
-
-    // prevScanHcDynamicVoxels_.clear();
-    // for (auto x : scanHcDynamicVoxels_)
-    //     prevScanHcDynamicVoxels_.push_back(x);
-
-    // prevScanHcDynamicVoxels_ = scanHcDynamicVoxels_;
-
-    
-
-    // scanDynamicVoxels_.clear();
     // Save the high confidence dynamic detections to be used for the next scan.
     prevScanDynamicVoxels_.clear();
     for (auto x : scan.occupiedVoxels)
@@ -367,17 +312,8 @@ void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistor
         if (scan.getDynamicHighConfidence(x))
         {
             prevScanDynamicVoxels_.push_back(x);
-            // voxelMap.map_[x.first].isDynamic = true;
         } 
-        // else
-        // {
-        //     voxelMap.map_[x.first].isDynamic = false;
-
-        // }
-    }
-    
-    // std::cout << scanNum_ << " " << thresholdLimit << std::endl;
-    
+    }    
 }
 
 void Map::findMedianValue(Scan &scan)
@@ -385,11 +321,9 @@ void Map::findMedianValue(Scan &scan)
     // Clean the convolution scores.
     // Average the convolution scores around the neighbour.
     Scan scanOriginal = scan;
-    // VoxelHashMap currentScanOccupancyCopy = prevScanOccupancy;
-    // for (auto &[vox,state] : prevScanOccupancy.map_)
     for (auto &vox : scan.occupiedVoxels)
     {
-        Eigen::Vector3i p;
+        Voxel v;
         std::vector<double> voxScores;
         int x = vox(0);
         int y = vox(1);
@@ -401,10 +335,10 @@ void Map::findMedianValue(Scan &scan)
             {
                 for (int k = z - edge; k < z + edge + 1; ++k)
                 {
-                    p << i, j, k;
-                    if (scan.checkIfEntryExists(p))
+                    v << i, j, k;
+                    if (scan.checkIfEntryExists(v))
                     {
-                        voxScores.push_back(scan.getConvScore(p));
+                        voxScores.push_back(scan.getConvScore(v));
                     }
                 }
             }
@@ -414,5 +348,7 @@ void Map::findMedianValue(Scan &scan)
     }
 
     for (auto &vox : scan.occupiedVoxels)
+    {
         scan.setConvScore(vox, scanOriginal.getConvScore(vox));
+    }
 }

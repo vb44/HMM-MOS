@@ -25,8 +25,7 @@ int main(int argc, char** argv)
     // LOAD THE SCAN PATHS AND THE POSE ESTIMATES
     // ------------------------------------------------------------------------
     std::vector<std::string> scanFiles;
-    for (auto const& dir_entry : std::filesystem::directory_iterator(
-                                configParser.scanPath))
+    for (auto const& dir_entry : std::filesystem::directory_iterator(configParser.scanPath))
     { 
         scanFiles.push_back(dir_entry.path());
     }
@@ -38,8 +37,7 @@ int main(int argc, char** argv)
     unsigned int numScans = scanFiles.size();
     
     // Read the pose estimates in KITTI format.
-    std::vector<std::vector<double> > poseEstimates = 
-                                      readPoseEstimates(configParser.posePath); 
+    std::vector<std::vector<double> > poseEstimates = readPoseEstimates(configParser.posePath); 
     if (scanFiles.size() != poseEstimates.size())
     {
         std::cerr << "The number of scans (" << scanFiles.size() 
@@ -58,15 +56,14 @@ int main(int argc, char** argv)
     // ------------------------------------------------------------------------
     // HARDCODED PARAMETERS
     // ------------------------------------------------------------------------
-
-    // These QCD parameters stem from the design of the algorithm and are not
+    // These hmmConfig parameters stem from the design of the algorithm and are not
     // changed for the MOS task.
-    map.qcd.numStates = 3;
-    map.qcd.stateTransitionMatrix.resize(map.qcd.numStates,
-                                         map.qcd.numStates);
-    map.qcd.stateTransitionMatrix << 0.99,  0.00,  0.00,
-                                     0.005, 0.995, 0.005,
-                                     0.005, 0.005, 0.995;
+    map.hmmConfig.numStates = 3;
+    map.hmmConfig.stateTransitionMatrix.resize(map.hmmConfig.numStates,
+                                               map.hmmConfig.numStates);
+    map.hmmConfig.stateTransitionMatrix << 0.99,  0.00,  0.00,
+                                           0.005, 0.995, 0.005,
+                                           0.005, 0.005, 0.995;
 
     // ------------------------------------------------------------------------
     // Main loop.
@@ -75,7 +72,6 @@ int main(int argc, char** argv)
     for (unsigned int scanNum = configParser.startScan-1;
                       scanNum < configParser.endScan; scanNum++)
     {
-        // std::cout << scanNum << std::endl;
         auto startScanTimer = std::chrono::high_resolution_clock::now();
 
         // Read the new scan.
@@ -90,14 +86,9 @@ int main(int argc, char** argv)
         // Update the map.
         map.update(scan, scanNum);
         auto finishMapUpdate = std::chrono::high_resolution_clock::now();
-
-        // for (auto &x : scan.observedVoxels)
-        //     std::cout << x.transpose() << std::endl;
-        // exit(1);
         
         if (scanNum >= (configParser.startScan + configParser.localWindowSize))
         {
-            // std::cout << "here " << scanNum << std::endl;
             // Determine dynamic voxels.
             map.findDynamicVoxels(scan, scanHistory);
             auto finishFindDynamicVoxel = std::chrono::high_resolution_clock::now();
@@ -108,10 +99,6 @@ int main(int argc, char** argv)
                           << std::chrono::duration_cast<std::chrono::milliseconds>(finishVoxelizeScan - finishReadScan).count() << " "
                           << std::chrono::duration_cast<std::chrono::milliseconds>(finishMapUpdate - finishVoxelizeScan).count() << " "
                           << std::chrono::duration_cast<std::chrono::milliseconds>(finishFindDynamicVoxel - finishMapUpdate).count() << std::endl;
-                // std::cout << "readScan      : " << std::chrono::duration_cast<std::chrono::milliseconds>(finishReadScan - startScanTimer).count() << std::endl;
-                // std::cout << "voxelizeScan  : " << std::chrono::duration_cast<std::chrono::milliseconds>(finishVoxelizeScan - finishReadScan).count() << std::endl;
-                // std::cout << "mapUpdate     : " << std::chrono::duration_cast<std::chrono::milliseconds>(finishMapUpdate - finishVoxelizeScan).count() << std::endl;
-                // std::cout << "dynamicVoxel  : " << std::chrono::duration_cast<std::chrono::milliseconds>(finishFindDynamicVoxel - finishMapUpdate).count() << std::endl;
             }
         } else
         {
@@ -122,9 +109,7 @@ int main(int argc, char** argv)
         {
             if (configParser.scanNumsToPrint.contains(scanNum+1-configParser.offset))
             {
-                // std::cout << scanFiles[scanNum] << std::endl;
                 scan.writeFile(outFile, scanNum);
-                // writeFile(scanNum, scan, outFile);
             }
         }
 
@@ -135,9 +120,5 @@ int main(int argc, char** argv)
         {
             scan.writeLabel(scanNum);
         }
-
-        // std::cout << scanNum << " "  << scan.occupiedVoxels.size() << " " << scan.ptsOccupied.size() << " " <<  scan.observedVoxels.size() <<  " " << map.getMapSize() << std::endl;
-
     }
-
 }

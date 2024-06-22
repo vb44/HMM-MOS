@@ -50,7 +50,7 @@ std::vector<std::vector<double> > readPoseEstimates(const std::string &fileName)
     float item;
     std::vector<std::vector<double> > poses;
     std::vector<double> pose(numColumns, 0.0);
-    std::vector<double> dataFromFile;    // pts read from file
+    std::vector<double> dataFromFile;
     float pt;
     
     while (file >> pt)
@@ -69,34 +69,47 @@ std::vector<std::vector<double> > readPoseEstimates(const std::string &fileName)
     return poses;
 }
 
+// double findMedian(std::vector<double> &a) 
+// { 
+//     int n = a.size();
+  
+//     // If size of the arr[] is even 
+//     if (n % 2 == 0)
+//     {
+//         // Applying nth_element on n/2th index.
+//         std::nth_element(a.begin(), a.begin() + n / 2, a.end()); 
+  
+//         // Applying nth_element on (n-1)/2 th index 
+//         std::nth_element(a.begin(), a.begin() + (n - 1) / 2, a.end()); 
+  
+//         // Find the average of value at index N/2 and (N-1)/2 
+//         return (double)(a[(n - 1) / 2] + a[n / 2]) / 2.0; 
+//     } 
+  
+//     // If size of the arr[] is odd.
+//     else 
+//     {
+//         // Applying nth_element on n/2 
+//         std::nth_element(a.begin(), a.begin() + n / 2, a.end()); 
+  
+//         // Value at index (N/2)th is the median 
+//         return (double)a[n / 2]; 
+//     } 
+// }
+
 double findMedian(std::vector<double> &a) 
-{ 
-    int n = a.size();
-  
-    // If size of the arr[] is even 
-    if (n % 2 == 0)
-    { 
-  
-        // Applying nth_element on n/2th index 
-        std::nth_element(a.begin(), a.begin() + n / 2, a.end()); 
-  
-        // Applying nth_element on (n-1)/2 th index 
-        std::nth_element(a.begin(), a.begin() + (n - 1) / 2, a.end()); 
-  
-        // Find the average of value at index N/2 and (N-1)/2 
-        return (double)(a[(n - 1) / 2] + a[n / 2]) / 2.0; 
-    } 
-  
-    // If size of the arr[] is odd 
-    else 
-    { 
-  
-        // Applying nth_element on n/2 
-        std::nth_element(a.begin(), a.begin() + n / 2, a.end()); 
-  
-        // Value at index (N/2)th is the median 
-        return (double)a[n / 2]; 
-    } 
+{
+    int n  = a.size();
+
+    std::sort(a.begin(), a.end());
+
+    if (n  % 2 != 0)
+    {
+        return a[n/2];
+    } else
+    {
+        return (a[(n-1)/2] + a[(n)/2])/2;
+    }
 }
 
 void findHistogramCounts(unsigned int nBins, std::vector<double> &vals,
@@ -136,7 +149,8 @@ int otsu(Eigen::VectorXd histogramCounts)
     double sumB = 0;
     double wB = 0;
     double maximum = 0;
-    double sum1 = histogramCounts.dot(Eigen::VectorXd::LinSpaced(histogramCounts.rows(),0,top-1));
+    double sum1 = histogramCounts.dot(Eigen::VectorXd::LinSpaced(
+                                              histogramCounts.rows(),0,top-1));
 
     for (unsigned int ii = 0; ii < top; ii++)
     {

@@ -1,14 +1,16 @@
 #include "Scan.hpp"
 
 Scan::Scan(const ConfigParser &config)
+    : voxelSize_(config.voxelSize)
+    , minRange_(config.minRange)
+    , maxRange_(config.maxRange)
+    , minOtsu_(config.minOtsu)
+    , outputLabelFolder_(config.outputLabelFolder)
 {
-    voxelSize_ = config.voxelSize;
-    minRange_ = config.minRange;
-    maxRange_ = config.maxRange;
+    // Compute the dimension of the convolution kernel.
     dim_ = config.maxRange/config.voxelSize * 2 + 1;
-    outputLabelFolder_ = config.outputLabelFolder;
+
     ptsOccupiedHistory_.resize(config.localWindowSize);
-    dynThreshold = 0;
 }
 
 Scan::~Scan()
@@ -17,17 +19,24 @@ Scan::~Scan()
 
 void Scan::readScan(const std::string &fileName, const std::vector<double> &pose)
 {
-    // scanNum_ = scanNum;
-    scanPtsTf_.clear();
+    unsigned int numColumns = 4; // Files expected in the .bin KITTI format.
     sensorPose << pose[0], pose[1], pose[2] , pose[3],
                   pose[4], pose[5], pose[6] , pose[7],
                   pose[8], pose[9], pose[10], pose[11],
                   0      , 0      , 0       , 1;      
-    unsigned int numColumns = 4;
+    
+    // Read the .bin scan file.
     std::ifstream file(fileName, std::ios::in | std::ios::binary);
-    // if (!file) return EXIT_FAILURE;
+    
+    if (!file)
+    {
+        std::cerr << "./hmm-mos: Scan file " + fileName + 
+                     " could not be opened! Exiting program." << std::endl;
+        exit(1);
+    }
+
     float item;
-    std::vector<double> ptsFromFile;    // pts read from file
+    std::vector<double> ptsFromFile;
     
     while (file.read((char*)&item, sizeof(item)))
     {
@@ -45,10 +54,14 @@ void Scan::readScan(const std::string &fileName, const std::vector<double> &pose
         for (unsigned int i = r.begin(); i < r.end(); i++)
         {
             int c = i*numColumns;
+
+            // Save the original point.
             scanPts_.coeffRef(i,0) = ptsFromFile[c];
             scanPts_.coeffRef(i,1) = ptsFromFile[c+1];
             scanPts_.coeffRef(i,2) = ptsFromFile[c+2];
             scanPts_.coeffRef(i,3) = 1;
+
+            // Transform the scan points by the sensor pose.
             scanPtsTf_[i] = ((sensorPose*scanPts_.row(i).transpose()).topRows(3));
         }
     });
@@ -77,19 +90,15 @@ void Scan::voxelizeScan()
 void Scan::addPointsWithIndex()
 {
     int i = 0;
-    std::for_each(scanPtsTf_.cbegin(), scanPtsTf_.cend(), [&](const auto &point) {
-        double ptNorm  = 0.0;
-        double ptDiff;
+    std::for_each(scanPtsTf_.cbegin(), scanPtsTf_.cend(), [&](const auto &point)
+    {
+        double ptNormSquared, ptDiff;
         for (int i = 0; i < 3; i++)
         {
             ptDiff = point(i)-sensorPose(i,3);
-            ptNorm += ptDiff * ptDiff; 
+            ptNormSquared += ptDiff * ptDiff; 
         }
-        // double ptNorm = (pow(point(0)-sensorPose(0,3),2) + 
-        //                  pow(point(1)-sensorPose(1,3),2) + 
-        //                  pow(point(2)-sensorPose(2,3),2));
-        // if (ptNorm > pow(minRange_,2))
-        if (ptNorm > minRange_*minRange_)
+        if (ptNormSquared > minRange_*minRange_)
         {
             auto voxel = Voxel((point / voxelSize_).template cast<int>());
             if (scan_.contains(voxel)) {
@@ -100,7 +109,7 @@ void Scan::addPointsWithIndex()
                 v.pointIndicies.push_back(i);
                 scan_.insert({voxel, v});
                 occupiedVoxels.push_back(voxel);
-                // ptsOcc.push_back({point(0),point(1),point(2)});
+                // ptsOcc.push_back({point(0),point(1),point(2)}); // TODO: Check quantization.
                 ptsOccupied.push_back({voxel(0)*voxelSize_,
                                        voxel(1)*voxelSize_,
                                        voxel(2)*voxelSize_});
@@ -109,13 +118,10 @@ void Scan::addPointsWithIndex()
         i++;
     });
 
-
+    // Save the previous and current scan points for the EDF construction.
     ptsOccupiedOverWindow = ptsOccupied;
     unsigned int j = ptsOccupiedHistory_.size()-1;
     {
-        // for (auto [vox,state] : currentScanOccupancyHistory[i].map_)
-            // currentScanOccupancy.ptsOcc.push_back(ptCloudTfs[i][state.pointIndicies[0]]);
-            // currentScanOccupancy.ptsOcc.push_back(ptCloudTf[state.pointIndicies[0]]);
         for (auto pt : ptsOccupiedHistory_[j])
         {
             ptsOccupiedOverWindow.push_back(pt);
@@ -126,21 +132,27 @@ void Scan::addPointsWithIndex()
 
 void Scan::findObservedVoxels()
 {    
-    std::vector<std::vector<std::vector<bool> > > obs(dim_, std::vector<std::vector<bool> >(dim_, std::vector<bool>(dim_)));
+    std::vector<std::vector<std::vector<bool> > > obs(
+                            dim_, std::vector<std::vector<bool> >(
+                            dim_, std::vector<bool>(dim_)));
     std::vector<std::vector<Eigen::Vector3i> > all(occupiedVoxels.size());
     
-    // Find the free voxels traversed for each occupied voxel.
+    // Sensor position.
     int sX = std::floor(sensorPose(0,3)/voxelSize_);
     int sY = std::floor(sensorPose(1,3)/voxelSize_);
     int sZ = std::floor(sensorPose(2,3)/voxelSize_);
 
+    // Find the free voxels traversed for each occupied voxel using the
+    // Bresenham line algorihtm.
     tbb::parallel_for(
     tbb::blocked_range<int>(0,occupiedVoxels.size()),
     [&](tbb::blocked_range<int> r)
     {
-        for (unsigned int occupiedVoxNum = r.begin(); occupiedVoxNum < r.end(); occupiedVoxNum++)
+        for (unsigned int occupiedVoxNum = r.begin();
+             occupiedVoxNum < r.end();
+             occupiedVoxNum++)
         { 
-            // To support threading.
+            // To support multi-threading.
             std::vector<Eigen::Vector3i> ptsObs;
 
             // Extract the raycast start and end points.
@@ -158,8 +170,8 @@ void Scan::findObservedVoxels()
             int dx = abs(x1 - x0);
             int dy = abs(y1 - y0); 
             int dz = abs(z1 - z0);
-            int dm = std::max(std::max(dx,dy),dz); // maximum difference
-            x1 = y1 = z1 = dm/2; // error offset
+            int dm = std::max(std::max(dx,dy),dz);
+            x1 = y1 = z1 = dm/2;
 
             double ptNorm;
             double ptDiffX, ptDiffY, ptDiffZ;
@@ -169,12 +181,10 @@ void Scan::findObservedVoxels()
                 ptDiffX = (sX-x0)*voxelSize_;
                 ptDiffY = (sY-y0)*voxelSize_;
                 ptDiffZ = (sZ-z0)*voxelSize_;
-                ptNorm = (ptDiffX*ptDiffX) + (ptDiffY*ptDiffY) + (ptDiffZ*ptDiffZ); 
+                ptNorm = (ptDiffX*ptDiffX) +
+                         (ptDiffY*ptDiffY) +
+                         (ptDiffZ*ptDiffZ); 
 
-                // double ptNorm = pow((sX-x0)*voxelSize_,2) + 
-                //                 pow((sY-y0)*voxelSize_,2) + 
-                //                 pow((sZ-z0)*voxelSize_,2);
-                // if (ptNorm <= (maxRange_*maxRange_) && !occFlag)// && n >= pow(3,2))
                 if (ptNorm <= (maxRange_*maxRange_))// && !occFlag)// && n >= pow(3,2))
                 {
                     ptsObs.push_back({x0,y0,z0});
@@ -195,9 +205,9 @@ void Scan::findObservedVoxels()
         }
     });
 
-    int i,j,k;
+    // Save the unique observed voxels from the repeated values in all.
+    int i, j, k;
     int offset = maxRange_/voxelSize_;
-    // std::vector<Eigen::Vector3i> b;
     for (const auto &x : all)
     {
         for (const auto &y : x)
@@ -214,44 +224,25 @@ void Scan::findObservedVoxels()
     }
 }
 
-void Scan::convertToPointCloudKdTree(std::vector<Eigen::Vector3d> &pts)
-{
-    size_t pcLength = pts.size();
-    pcForKdTree_.pts.clear();
-    pcForKdTree_.pts.resize(pcLength);
-
-    tbb::parallel_for(
-    tbb::blocked_range<int>(0, pcLength),
-    [&](tbb::blocked_range<int> r)
-    { 
-        for (size_t i = r.begin(); i < r.end(); i++)
-        {
-            pcForKdTree_.pts[i].x = pts[i](0);
-            pcForKdTree_.pts[i].y = pts[i](1);
-            pcForKdTree_.pts[i].z = pts[i](2);        
-        } 
-    });
-}
-
 void Scan::removeVoxelsOutsideMaxRange()
 {
-    std::vector<Eigen::Vector3i> ps;
-    double ptNorm;
-    double ptDiffX, ptDiffY, ptDiffZ;
+    double ptNormSquared, ptDiffX, ptDiffY, ptDiffZ;
+    std::vector<Eigen::Vector3i> voxToRemove;
     for (const auto &[pt, state] : scan_)
     {
         ptDiffX = pt.coeffRef(0)*voxelSize_-sensorPose.coeffRef(0,3);
         ptDiffY = pt.coeffRef(1)*voxelSize_-sensorPose.coeffRef(1,3);
         ptDiffZ = pt.coeffRef(2)*voxelSize_-sensorPose.coeffRef(2,3);
-        ptNorm = (ptDiffX*ptDiffX) + (ptDiffY*ptDiffY) + (ptDiffZ*ptDiffZ); 
-        if (ptNorm  > (maxRange_*maxRange_))
+        ptNormSquared = (ptDiffX*ptDiffX) +
+                        (ptDiffY*ptDiffY) + 
+                        (ptDiffZ*ptDiffZ);
+        if (ptNormSquared  > (maxRange_*maxRange_))
         {
-            ps.push_back(pt);
+            voxToRemove.push_back(pt);
         }
-        
     }
     
-    for (const auto &x : ps)
+    for (const auto &x : voxToRemove)
     {
         scan_.erase(x);
     }
@@ -279,16 +270,6 @@ void Scan::setConvScoreOverWindow(Voxel &voxel, double convScore)
     scan_[voxel].convScoreOverWindow = convScore;
 }
 
-double Scan::getConvScore(Voxel &voxel)
-{
-    return scan_[voxel].convScore;
-}
-
-double Scan::getConvScoreOverWindow(Voxel &voxel)
-{
-    return scan_[voxel].convScoreOverWindow;
-}
-
 void Scan::setDynamic(Voxel &voxel)
 {
     scan_[voxel].isDynamic = true;
@@ -298,6 +279,16 @@ void Scan::setDynamicHighConfidence(Voxel &voxel)
 {
     scan_[voxel].isDynamic = true;
     scan_[voxel].isDynamicHighConfidence = true;
+}
+
+double Scan::getConvScore(Voxel &voxel)
+{
+    return scan_[voxel].convScore;
+}
+
+double Scan::getConvScoreOverWindow(Voxel &voxel)
+{
+    return scan_[voxel].convScoreOverWindow;
 }
 
 bool Scan::getDynamic(Voxel &voxel)
@@ -343,8 +334,7 @@ void Scan::writeFile(std::ofstream &outFile, unsigned int scanNum)
 void Scan::writeLabel(unsigned int scanNum)
 {
     std::set<int> dynInds;
-    // std::cout << dynThreshold << std::endl;
-    if (dynThreshold > 3)
+    if (dynThreshold > minOtsu_)
     {
         for (auto &[vox,state] : scan_)
         {
@@ -365,13 +355,13 @@ void Scan::writeLabel(unsigned int scanNum)
     // Overwrite the static labels.
     for (auto x : dynInds)
     {
-        outputLabels(x) = 251;
+        outputLabels(x) = 251; // Dynamic.
     }
 
     std::stringstream fNameMaker;
-    fNameMaker << std::setw(6) << std::setfill('0') << std::to_string(scanNum) << ".label";
-    
-    // fNameMaker << std::setw(6) << std::setfill('0') << std::to_string(scanNum) << ".label";
+    fNameMaker << std::setw(6) << std::setfill('0') 
+               << std::to_string(scanNum) << ".label";
+
     std::string fName;
     fNameMaker >> fName;
 
@@ -389,6 +379,7 @@ void Scan::printVoxels()
 {
     for (auto &[vox,state] : scan_)
     {
-        std::cout << vox(0) << " " << vox(1) << " " << vox(2)  << " " << state.convScore << std::endl;
+        std::cout << vox(0) << " " << vox(1) << " " << vox(2)  
+                  << " " << state.convScore << std::endl;
     }
 }

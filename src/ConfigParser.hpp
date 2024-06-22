@@ -76,6 +76,9 @@ class ConfigParser
         // Maximum sensor range to filter point cloud measurements.
         double maxRange;
 
+        // Minimum Otsu threshold for identifying dyanmic voxels.
+        double minOtsu;
+
         // Option to output .label files in the Semantic KITTI format.
         bool outputLabels;
 
