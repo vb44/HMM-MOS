@@ -4,6 +4,7 @@
 #define CONFIGPARSER_H
 
 #include <iostream>
+#include <stdlib.h>
 #include <string>
 #include <yaml-cpp/yaml.h>
 

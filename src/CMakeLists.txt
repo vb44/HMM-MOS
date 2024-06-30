@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(HMM_MOS)
+project(hmmMOS)
 
 find_package(TBB REQUIRED)
 find_package(nanoflann REQUIRED)
@@ -10,10 +10,15 @@ find_package(tsl-robin-map REQUIRED)
 
 add_compile_options(-std=c++2a -O3)
 
-# Add an executable called qcdmos
-add_executable(qcdmos main.cpp ConfigParser.cpp Map.cpp Scan.cpp utils.cpp)
+# Add an executable called hmmMOS
+add_executable(hmmMOS 
+               main.cpp 
+               ConfigParser.cpp 
+               Map.cpp 
+               Scan.cpp 
+               utils.cpp)
 
-target_link_libraries(qcdmos
+target_link_libraries(hmmMOS
                       TBB::tbb
                       nanoflann::nanoflann
                       yaml-cpp::yaml-cpp

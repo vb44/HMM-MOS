@@ -13,7 +13,7 @@ Map::Map(const ConfigParser &config)
     hmmConfig.sigFree = config.freeSigma;
     hmmConfig.sigOcc = config.occupancySigma;
 
-    // Convolution edge size.
+    // Pre-compute the convolution edge size.
     edge_ = (convSize_-1)/2;
 
     // Pre-compute the convolution computation constants.

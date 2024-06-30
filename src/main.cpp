@@ -1,6 +1,6 @@
 #include "ConfigParser.hpp"
-#include "Scan.hpp"
 #include "Map.hpp"
+#include "Scan.hpp"
 #include "utils.hpp"
 
 #include <boost/circular_buffer.hpp>
@@ -56,8 +56,8 @@ int main(int argc, char** argv)
     // ------------------------------------------------------------------------
     // HARDCODED PARAMETERS
     // ------------------------------------------------------------------------
-    // These hmmConfig parameters stem from the design of the algorithm and are not
-    // changed for the MOS task.
+    // These hmmConfig parameters stem from the design of the algorithm and are
+    // not changed for the MOS task.
     map.hmmConfig.numStates = 3;
     map.hmmConfig.stateTransitionMatrix.resize(map.hmmConfig.numStates,
                                                map.hmmConfig.numStates);
