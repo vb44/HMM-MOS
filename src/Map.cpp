@@ -26,18 +26,18 @@ Map::~Map()
 
 }
 
-void Map::addPoints(const std::vector<Eigen::Vector3i> &points)
+void Map::addVoxels(const std::vector<Eigen::Vector3i> &voxels)
 {
-    std::for_each(points.cbegin(), points.cend(), [&](const auto &point)
+    std::for_each(voxels.cbegin(), voxels.cend(), [&](const auto &voxel)
     {
-        if (map_.contains(point))
+        if (map_.contains(voxel))
         {
-            map_[point].currentStateScan = scanNum_;
+            map_[voxel].currentStateScan = scanNum_;
         } else
         {
             MapVoxelState v;
             v.currentStateScan = scanNum_;
-            map_.insert({point, v});
+            map_.insert({voxel, v});
         }
     });
 }
@@ -58,105 +58,6 @@ void Map::convertToKdTreeContainer(std::vector<Eigen::Vector3d> &pts)
             pcForKdTree_.pts[i].z = pts[i](2);        
         } 
     });
-}
-
-void Map::update(Scan &scan, unsigned int scanNum)
-{
-    scanNum_ = scanNum;
-    sensorPose_ = scan.sensorPose;
-
-    // Construct a KD-Tree of the measurements.
-    convertToKdTreeContainer(scan.ptsOccupiedOverWindow);
-    my_kd_tree_t *ptCloudKdTree = new my_kd_tree_t(3, pcForKdTree_, {10});
-
-    // Update the observed voxels in the map.
-    addPoints(scan.observedVoxels);
-
-    tbb::parallel_for(
-    tbb::blocked_range<pointsIterator>(scan.observedVoxels.cbegin(),scan.observedVoxels.cend()),
-    [&](tbb::blocked_range<pointsIterator> r)
-    {
-        for (const auto &voxel : r)
-        {   
-            size_t numResults = 1;
-            uint32_t retIndex;
-            double pt[] = {voxel.coeffRef(0)*voxelSize_,
-                           voxel.coeffRef(1)*voxelSize_,
-                           voxel.coeffRef(2)*voxelSize_};
-            ptCloudKdTree->knnSearch(&pt[0], numResults, &retIndex, &map_[voxel].closestDistance);
-            // map_[voxel].closestDistance = outDistSqr;
-            
-            // Update voxel likelihoods.
-            Eigen::Matrix3d B;
-            B << 0, 0, 0,
-                 0, exp(-map_[voxel].closestDistance*normDistOccDen_), 0,
-                 0, 0, (1 - exp(-map_[voxel].closestDistance*normDistFreeDen_));
-
-            Eigen::Vector3d alpha = B * hmmConfig.stateTransitionMatrix * map_[voxel].xHat;
-            map_[voxel].xHat = alpha/alpha.sum();
-            map_[voxel].scanLastSeen = scanNum;
-            
-            // Update the voxel state if the probability of being in that state is greater than the predefined threshold.
-            // std::vector<double> vec(voxelMap.map_[pointsObservedUnique[i]].xHat.data(), voxelMap.map_[pointsObservedUnique[i]].xHat.data() + hmmConfigParams.numStates);                
-            // double maxElement = *std::max_element(&vec[0], &vec[0]+hmmConfigParams.numStates);
-            // int maxElementIndex = std::find(&vec[0], &vec[0]+hmmConfigParams.numStates, maxElement) - &vec[0];
-
-            int maxElementIndex = map_[voxel].xHat(0) > map_[voxel].xHat(1) ? 0 : 1;
-            maxElementIndex = map_[voxel].xHat(2) > map_[voxel].xHat(maxElementIndex) ? 2 : maxElementIndex;
-            double maxElement = map_[voxel].xHat(maxElementIndex);
-
-            if (maxElement > hmmConfig.beliefThreshold)// && maxElement != voxelStates[voxelNum].currentState[0]
-            { 
-                // Check for a change in state.
-                // Looking for a change in state from free to occupied and vice versa.
-                if ((maxElementIndex != map_[voxel].currentState) && 
-                    (maxElementIndex != 0 && map_[voxel].currentState != 0))
-                {
-                    map_[voxel].lastStateChangeScan[0] = map_[voxel].lastStateChangeScan[1]; 
-                    map_[voxel].lastStateChangeScan[1] = scanNum;
-                }
-
-                // Save the current state and the time it was observed.
-                map_[voxel].currentState = maxElementIndex;
-            }
-            // Update the scan the last time the voxel was observed.
-            map_[voxel].currentStateScan = scanNum; 
-        }
-    });
-    // Remove map points outside the maximum range and the frame sliding local window.
-    removeVoxelsOutsideWindowAndMaxRange();
-
-    delete ptCloudKdTree;
-}
-
-unsigned int Map::getMapSize()
-{
-    return map_.size();
-}
-
-void Map::removeVoxelsOutsideWindowAndMaxRange()
-{
-    std::vector<Eigen::Vector3i> ps;
-    double ptNorm;
-    double ptDiffX, ptDiffY, ptDiffZ;
-    for (const auto &[pt, state] : map_)
-    {
-        ptDiffX = pt.coeffRef(0)*voxelSize_-sensorPose_.coeffRef(0,3);
-        ptDiffY = pt.coeffRef(1)*voxelSize_-sensorPose_.coeffRef(1,3);
-        ptDiffZ = pt.coeffRef(2)*voxelSize_-sensorPose_.coeffRef(2,3);
-        ptNorm = (ptDiffX*ptDiffX) + (ptDiffY*ptDiffY) + (ptDiffZ*ptDiffZ); 
-        if (ptNorm  > ((maxRange_*2)*(maxRange_*2)) || 
-           (state.scanLastSeen > globalWinLen_ && 
-            state.scanLastSeen < scanNum_- globalWinLen_))
-        {
-            ps.push_back(pt);
-        }
-    }
-    
-    for (const auto &x : ps)
-    {
-        map_.erase(x);
-    }
 }
 
 void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistory)
@@ -351,4 +252,98 @@ void Map::findMedianValue(Scan &scan)
     {
         scan.setConvScore(vox, scanOriginal.getConvScore(vox));
     }
+}
+
+void Map::removeVoxelsOutsideWindowAndMaxRange()
+{
+    std::vector<Eigen::Vector3i> ps;
+    double ptNorm;
+    double ptDiffX, ptDiffY, ptDiffZ;
+    for (const auto &[pt, state] : map_)
+    {
+        ptDiffX = pt.coeffRef(0)*voxelSize_-sensorPose_.coeffRef(0,3);
+        ptDiffY = pt.coeffRef(1)*voxelSize_-sensorPose_.coeffRef(1,3);
+        ptDiffZ = pt.coeffRef(2)*voxelSize_-sensorPose_.coeffRef(2,3);
+        ptNorm = (ptDiffX*ptDiffX) + (ptDiffY*ptDiffY) + (ptDiffZ*ptDiffZ); 
+        if (ptNorm  > ((maxRange_*2)*(maxRange_*2)) || 
+           (state.scanLastSeen > globalWinLen_ && 
+            state.scanLastSeen < scanNum_- globalWinLen_))
+        {
+            ps.push_back(pt);
+        }
+    }
+    
+    for (const auto &x : ps)
+    {
+        map_.erase(x);
+    }
+}
+
+void Map::update(Scan &scan, unsigned int scanNum)
+{
+    scanNum_ = scanNum;
+    sensorPose_ = scan.sensorPose;
+
+    // Construct a KD-Tree of the measurements.
+    convertToKdTreeContainer(scan.ptsOccupiedOverWindow);
+    my_kd_tree_t *ptCloudKdTree = new my_kd_tree_t(3, pcForKdTree_, {10});
+
+    // Update the observed voxels in the map.
+    addVoxels(scan.observedVoxels);
+
+    tbb::parallel_for(
+    tbb::blocked_range<pointsIterator>(scan.observedVoxels.cbegin(),scan.observedVoxels.cend()),
+    [&](tbb::blocked_range<pointsIterator> r)
+    {
+        for (const auto &voxel : r)
+        {   
+            size_t numResults = 1;
+            uint32_t retIndex;
+            double pt[] = {voxel.coeffRef(0)*voxelSize_,
+                           voxel.coeffRef(1)*voxelSize_,
+                           voxel.coeffRef(2)*voxelSize_};
+            ptCloudKdTree->knnSearch(&pt[0], numResults, &retIndex, &map_[voxel].closestDistance);
+            // map_[voxel].closestDistance = outDistSqr;
+            
+            // Update voxel likelihoods.
+            Eigen::Matrix3d B;
+            B << 0, 0, 0,
+                 0, exp(-map_[voxel].closestDistance*normDistOccDen_), 0,
+                 0, 0, (1 - exp(-map_[voxel].closestDistance*normDistFreeDen_));
+
+            Eigen::Vector3d alpha = B * hmmConfig.stateTransitionMatrix * map_[voxel].xHat;
+            map_[voxel].xHat = alpha/alpha.sum();
+            map_[voxel].scanLastSeen = scanNum;
+            
+            // Update the voxel state if the probability of being in that state is greater than the predefined threshold.
+            // std::vector<double> vec(voxelMap.map_[pointsObservedUnique[i]].xHat.data(), voxelMap.map_[pointsObservedUnique[i]].xHat.data() + hmmConfigParams.numStates);                
+            // double maxElement = *std::max_element(&vec[0], &vec[0]+hmmConfigParams.numStates);
+            // int maxElementIndex = std::find(&vec[0], &vec[0]+hmmConfigParams.numStates, maxElement) - &vec[0];
+
+            int maxElementIndex = map_[voxel].xHat(0) > map_[voxel].xHat(1) ? 0 : 1;
+            maxElementIndex = map_[voxel].xHat(2) > map_[voxel].xHat(maxElementIndex) ? 2 : maxElementIndex;
+            double maxElement = map_[voxel].xHat(maxElementIndex);
+
+            if (maxElement > hmmConfig.beliefThreshold)// && maxElement != voxelStates[voxelNum].currentState[0]
+            { 
+                // Check for a change in state.
+                // Looking for a change in state from free to occupied and vice versa.
+                if ((maxElementIndex != map_[voxel].currentState) && 
+                    (maxElementIndex != 0 && map_[voxel].currentState != 0))
+                {
+                    map_[voxel].lastStateChangeScan[0] = map_[voxel].lastStateChangeScan[1]; 
+                    map_[voxel].lastStateChangeScan[1] = scanNum;
+                }
+
+                // Save the current state and the time it was observed.
+                map_[voxel].currentState = maxElementIndex;
+            }
+            // Update the scan the last time the voxel was observed.
+            map_[voxel].currentStateScan = scanNum; 
+        }
+    });
+    // Remove map points outside the maximum range and the frame sliding local window.
+    removeVoxelsOutsideWindowAndMaxRange();
+
+    delete ptCloudKdTree;
 }

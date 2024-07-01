@@ -76,6 +76,7 @@ struct NanoflannPointsContainer
 
 /**
  * @brief Kd tree type used directly from the nanoflann library.
+ * 
  */
 using my_kd_tree_t = const nanoflann::KDTreeSingleIndexAdaptor<
                      nanoflann::L2_Simple_Adaptor<double, NanoflannPointsContainer<double>>,

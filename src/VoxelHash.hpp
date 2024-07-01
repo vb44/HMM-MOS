@@ -1,11 +1,16 @@
-#ifndef VoxelHash_h_included_
-#define VoxelHash_h_included_
+#pragma once
+
+#ifndef HMMMOS_VOXELHASH_H_
+#define HMMMOS_VOXELHASH_H_
 
 #include <Eigen/Dense>
 
 using Voxel = Eigen::Vector3i;
 
-// Voxel hash map implementation from KISS-ICP.
+/**
+ * @brief Voxel hash for uniquely storing entries described by (x,y,z) integers.
+ *        Voxel hash map implementation from KISS-ICP. 
+ */
 struct VoxelHash
 {
     size_t operator()(const Voxel &voxel) const {
@@ -14,4 +19,4 @@ struct VoxelHash
     }
 };
 
-#endif // VoxelHash_h_included
+#endif // HMMMOS_VOXELHASH_H

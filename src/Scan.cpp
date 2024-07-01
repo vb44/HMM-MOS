@@ -15,77 +15,8 @@ Scan::Scan(const ConfigParser &config)
 
 Scan::~Scan()
 {
+
 }
-
-void Scan::readScan(const std::string &fileName, const std::vector<double> &pose)
-{
-    unsigned int numColumns = 4; // Files expected in the .bin KITTI format.
-    sensorPose << pose[0], pose[1], pose[2] , pose[3],
-                  pose[4], pose[5], pose[6] , pose[7],
-                  pose[8], pose[9], pose[10], pose[11],
-                  0      , 0      , 0       , 1;      
-    
-    // Read the .bin scan file.
-    std::ifstream file(fileName, std::ios::in | std::ios::binary);
-    
-    if (!file)
-    {
-        std::cerr << "./hmm-mos: Scan file " + fileName + 
-                     " could not be opened! Exiting program." << std::endl;
-        exit(1);
-    }
-
-    float item;
-    std::vector<double> ptsFromFile;
-    
-    while (file.read((char*)&item, sizeof(item)))
-    {
-        ptsFromFile.push_back(item);
-    }
-
-    unsigned int numPts = ptsFromFile.size() / numColumns;
-    scanPts_.resize(numPts, numColumns);
-    scanPtsTf_.resize(numPts);
-
-    tbb::parallel_for(
-    tbb::blocked_range<int>(0,numPts),
-    [&](tbb::blocked_range<int> r)
-    {
-        for (unsigned int i = r.begin(); i < r.end(); i++)
-        {
-            int c = i*numColumns;
-
-            // Save the original point.
-            scanPts_.coeffRef(i,0) = ptsFromFile[c];
-            scanPts_.coeffRef(i,1) = ptsFromFile[c+1];
-            scanPts_.coeffRef(i,2) = ptsFromFile[c+2];
-            scanPts_.coeffRef(i,3) = 1;
-
-            // Transform the scan points by the sensor pose.
-            scanPtsTf_[i] = ((sensorPose*scanPts_.row(i).transpose()).topRows(3));
-        }
-    });
-
-    file.close();
-}
-
-void Scan::voxelizeScan()
-{
-    ptsOccupied.clear();
-    occupiedVoxels.clear();
-    observedVoxels.clear();
-    scan_.clear();
-
-    // Voxelize the scan.
-    addPointsWithIndex();
-
-    // Raycast to find all observed voxels.    
-    findObservedVoxels();
-
-    // Remove voxelized measurements that are out of range.
-    removeVoxelsOutsideMaxRange(); 
-}
-
 
 void Scan::addPointsWithIndex()
 {
@@ -128,6 +59,11 @@ void Scan::addPointsWithIndex()
         }
     }
     ptsOccupiedHistory_.push_back(ptsOccupied);
+}
+
+bool Scan::checkIfEntryExists(const Voxel &voxel)
+{
+    return scan_.contains(voxel);
 }
 
 void Scan::findObservedVoxels()
@@ -224,6 +160,109 @@ void Scan::findObservedVoxels()
     }
 }
 
+double Scan::getConvScore(Voxel &voxel)
+{
+    return scan_[voxel].convScore;
+}
+
+double Scan::getConvScoreOverWindow(Voxel &voxel)
+{
+    return scan_[voxel].convScoreOverWindow;
+}
+
+bool Scan::getDynamic(Voxel &voxel)
+{
+    return scan_[voxel].isDynamic;
+}
+
+bool Scan::getDynamicHighConfidence(Voxel &voxel)
+{
+    return scan_[voxel].isDynamic && scan_[voxel].isDynamicHighConfidence;
+}
+
+ std::vector<int> Scan::getIndicies(Voxel &voxel)
+ {
+    std::vector<int> inds;
+    for (auto x : scan_[voxel].pointIndicies)
+    {
+        inds.push_back(x);
+    }
+    return inds;
+ }
+
+void Scan::setConvScore(Voxel voxel, double convScore)
+{
+    scan_[voxel].convScore = convScore;
+}
+
+void Scan::setConvScoreOverWindow(Voxel &voxel, double convScore)
+{
+    scan_[voxel].convScoreOverWindow = convScore;
+}
+
+void Scan::setDynamic(Voxel &voxel)
+{
+    scan_[voxel].isDynamic = true;
+}
+
+void Scan::setDynamicHighConfidence(Voxel &voxel)
+{
+    scan_[voxel].isDynamic = true;
+    scan_[voxel].isDynamicHighConfidence = true;
+}
+
+ void Scan::readScan(const std::string &fileName, const std::vector<double> &pose)
+{
+    unsigned int numColumns = 4; // Files expected in the .bin KITTI format.
+    sensorPose << pose[0], pose[1], pose[2] , pose[3],
+                  pose[4], pose[5], pose[6] , pose[7],
+                  pose[8], pose[9], pose[10], pose[11],
+                  0      , 0      , 0       , 1;      
+    
+    // Read the .bin scan file.
+    std::ifstream file(fileName, std::ios::in | std::ios::binary);
+    
+    if (!file)
+    {
+        std::cerr << "./hmm-mos: Scan file " + fileName + 
+                     " could not be opened! Exiting program." << std::endl;
+        exit(1);
+    }
+
+    float item;
+    std::vector<double> ptsFromFile;
+    
+    while (file.read((char*)&item, sizeof(item)))
+    {
+        ptsFromFile.push_back(item);
+    }
+
+    unsigned int numPts = ptsFromFile.size() / numColumns;
+    scanPts_.resize(numPts, numColumns);
+    scanPtsTf_.resize(numPts);
+
+    tbb::parallel_for(
+    tbb::blocked_range<int>(0,numPts),
+    [&](tbb::blocked_range<int> r)
+    {
+        for (unsigned int i = r.begin(); i < r.end(); i++)
+        {
+            int c = i*numColumns;
+
+            // Save the original point.
+            scanPts_.coeffRef(i,0) = ptsFromFile[c];
+            scanPts_.coeffRef(i,1) = ptsFromFile[c+1];
+            scanPts_.coeffRef(i,2) = ptsFromFile[c+2];
+            scanPts_.coeffRef(i,3) = 1;
+
+            // Transform the scan points by the sensor pose.
+            scanPtsTf_[i] = ((sensorPose*scanPts_.row(i).transpose()).topRows(3));
+        }
+    });
+
+    file.close();
+}
+
 void Scan::removeVoxelsOutsideMaxRange()
 {
     double ptNormSquared, ptDiffX, ptDiffY, ptDiffZ;
@@ -255,61 +294,22 @@ void Scan::removeVoxelsOutsideMaxRange()
     }
 }
 
-bool Scan::checkIfEntryExists(const Voxel &voxel)
+void Scan::voxelizeScan()
 {
-    return scan_.contains(voxel);
-}
+    ptsOccupied.clear();
+    occupiedVoxels.clear();
+    observedVoxels.clear();
+    scan_.clear();
 
-void Scan::setConvScore(Voxel voxel, double convScore)
-{
-    scan_[voxel].convScore = convScore;
-}
+    // Voxelize the scan.
+    addPointsWithIndex();
 
-void Scan::setConvScoreOverWindow(Voxel &voxel, double convScore)
-{
-    scan_[voxel].convScoreOverWindow = convScore;
-}
+    // Raycast to find all observed voxels.    
+    findObservedVoxels();
 
-void Scan::setDynamic(Voxel &voxel)
-{
-    scan_[voxel].isDynamic = true;
+    // Remove voxelized measurements that are out of range.
+    removeVoxelsOutsideMaxRange(); 
 }
-
-void Scan::setDynamicHighConfidence(Voxel &voxel)
-{
-    scan_[voxel].isDynamic = true;
-    scan_[voxel].isDynamicHighConfidence = true;
-}
-
-double Scan::getConvScore(Voxel &voxel)
-{
-    return scan_[voxel].convScore;
-}
-
-double Scan::getConvScoreOverWindow(Voxel &voxel)
-{
-    return scan_[voxel].convScoreOverWindow;
-}
-
-bool Scan::getDynamic(Voxel &voxel)
-{
-    return scan_[voxel].isDynamic;
-}
-
-bool Scan::getDynamicHighConfidence(Voxel &voxel)
-{
-    return scan_[voxel].isDynamic && scan_[voxel].isDynamicHighConfidence;
-}
-
- std::vector<int> Scan::getIndicies(Voxel &voxel)
- {
-    std::vector<int> inds;
-    for (auto x : scan_[voxel].pointIndicies)
-    {
-        inds.push_back(x);
-    }
-    return inds;
- }
 
 void Scan::writeFile(std::ofstream &outFile, unsigned int scanNum)
 {
@@ -373,13 +373,4 @@ void Scan::writeLabel(unsigned int scanNum)
         outFile.write(reinterpret_cast<const char*> (&label), sizeof(label));
     }
     outFile.close();
-}
-
-void Scan::printVoxels()
-{
-    for (auto &[vox,state] : scan_)
-    {
-        std::cout << vox(0) << " " << vox(1) << " " << vox(2)  
-                  << " " << state.convScore << std::endl;
-    }
 }

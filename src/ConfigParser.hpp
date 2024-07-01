@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef CONFIGPARSER_H
-#define CONFIGPARSER_H
+#ifndef HMMMOS_CONFIGPARSER_H_
+#define HMMMOS_CONFIGPARSER_H_
 
 #include <iostream>
 #include <stdlib.h>
@@ -106,4 +106,4 @@ class ConfigParser
         std::string yamlFilePath_;
 };
 
-#endif
+#endif // HMMOS_CONFIGPARSER_H_
