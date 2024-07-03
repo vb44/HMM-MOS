@@ -4,7 +4,7 @@ We propose a novel learning-free approach to segment moving objects in point clo
 The foundation of the approach lies in modelling each voxel using a Hidden Markov Model (HMM) and probabilistically integrating beliefs into a global map using an HMM filter.
 
 This is the open-source implementation of the proposed approach. 
-The code is portable, easy to understand, and modify.
+The code is portable and easy to understand and modify.
 
 The following includes:
 1. [A summary of the MOS approach](#method).
@@ -23,12 +23,12 @@ The method is illustrated in the flowchart below.
 The method has nine configuration parameters.
 1. ***A*** is the HMM state transition matrix (fixed for the MOS task)
 2. ***voxelSize*** is the discretization size of the voxel map
-3. ***&sigma (occupancy)*** is the voxel occupancy likelihood standard deviation
-4. ***&sigma (free)*** is the voxel occupancy likelihood standard deviation.
+3. ***&sigma; (occupancy)*** is the voxel occupancy likelihood standard deviation
+4. ***&sigma; (free)*** is the voxel occupancy likelihood standard deviation.
 5. ***pMin*** is the state change detection threshold.
 6. ***m*** is the convolution kernel size.
 7. ***minOtsu*** is the minimum number of connected voxels to be identified as dynamic
-8. ***wLocal*** is the local window size used for the spatio-temporal convolution
+8. ***wLocal*** is the local window size used for the spatiotemporal convolution
 9. ***wGlobal*** is the global window size used for removing voxels from the map
 
 There are also hardware settings:
