@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "Eigen/Dense"
+#include "eigen3/Eigen/Dense"
 
 /**
  * @brief Read strings and convert to numbers to correctly order the input

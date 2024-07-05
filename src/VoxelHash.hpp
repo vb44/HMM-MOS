@@ -3,7 +3,7 @@
 #ifndef HMMMOS_VOXELHASH_H_
 #define HMMMOS_VOXELHASH_H_
 
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Dense"
 
 using Voxel = Eigen::Vector3i;
 

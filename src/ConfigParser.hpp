@@ -6,7 +6,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include "yaml-cpp/yaml.h"
 
 /**
  * @brief A class to handle the algorithm configuration parsing.
