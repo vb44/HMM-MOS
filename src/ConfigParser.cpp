@@ -25,7 +25,6 @@ int ConfigParser::parseConfig()
         convSize = configFromYaml["convSize"].as<unsigned int>();
         localWindowSize = configFromYaml["localWindowSize"].as<unsigned int>();
         globalWindowSize = configFromYaml["globalWindowSize"].as<unsigned int>();
-        offset = configFromYaml["offset"].as<unsigned int>();
         occupancySigma = configFromYaml["occupancySigma"].as<double>();
         freeSigma = configFromYaml["freeSigma"].as<double>();
         beliefThreshold = configFromYaml["beliefThreshold"].as<double>();

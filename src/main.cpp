@@ -107,7 +107,7 @@ int main(int argc, char** argv)
 
         if (configParser.outputFile)
         {
-            if (configParser.scanNumsToPrint.contains(scanNum+1-configParser.offset))
+            if (configParser.scanNumsToPrint.contains(scanNum+1))
             {
                 scan.writeFile(outFile, scanNum);
             }

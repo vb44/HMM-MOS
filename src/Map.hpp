@@ -127,8 +127,8 @@ class Map
         NanoflannPointsContainer<double> pcForKdTree_;
 
         // Voxelized map object.
-        tsl::robin_map<Voxel, MapVoxelState, VoxelHash> map_;
-        // ankerl::unordered_dense::map<Voxel, MapVoxelState, VoxelHash> map_; 
+        // tsl::robin_map<Voxel, MapVoxelState, VoxelHash> map_;
+        ankerl::unordered_dense::map<Voxel, MapVoxelState, VoxelHash> map_; 
         
         /**
          * @brief Add voxels to the current map.  

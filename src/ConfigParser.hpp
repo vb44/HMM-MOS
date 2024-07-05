@@ -54,10 +54,6 @@ class ConfigParser
         // The global window size used to maintain the map size and
         //  account for unertainties in the pose estimates.
         unsigned int globalWindowSize;
-        
-        // An offset option to use future scans. This introduced a
-        // delay in the scan interpretation.
-        unsigned int offset;
 
         // Mapping voxel size.
         double voxelSize;

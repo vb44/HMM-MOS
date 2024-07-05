@@ -235,8 +235,8 @@ class Scan
         boost::circular_buffer<std::vector<Eigen::Vector3d> > ptsOccupiedHistory_;
 
         // Voxelized scan.         
-        tsl::robin_map<Voxel, ScanVoxelState, VoxelHash> scan_;
-        // ankerl::unordered_dense::map<Voxel, ScanVoxelState, VoxelHash> scan_; 
+        // tsl::robin_map<Voxel, ScanVoxelState, VoxelHash> scan_;
+        ankerl::unordered_dense::map<Voxel, ScanVoxelState, VoxelHash> scan_; 
 
         /**
          * @brief Add the measurements from the new scan to the

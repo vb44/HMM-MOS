@@ -1,14 +1,14 @@
 ---
 # File paths
-scanPath: /media/vb/Gift/DOALS/processed/niederdorf/sequence_1/binFiles/
-posePath: /home/vb/Documents/public_repositories/SiMpLE/build/seq3_deskewed
-startScan: 2
+scanPath: /pathToDatasetFolder/niederdorf/sequence_1/binFiles/
+posePath: /pathToDatasetFolder/niederdorf/sequence_1/poses.txt
+startScan: 1
 endScan: 1768
 minRange: 0.5
 maxRange: 120
 outputFile: true
 scanNumsToPrint: [76, 256, 436, 616, 796, 976, 1156, 1336, 1516, 1696]
-outputFileName: /home/vb/Documents/public_repositories/QCD_MOS/results/test_seq3
+outputFileName: /saveFolderPath/results/test_seq3
 outputLabels: false
 outputLabelFolder: 
 
@@ -16,8 +16,8 @@ outputLabelFolder:
 voxelSize: 0.2
 occupancySigma: 0.2
 freeSigma: 0.2
-beliefThreshold: 0.3
+beliefThreshold: 0.99
 convSize: 5
 localWindowSize: 3
+minOtsu: 3
 globalWindowSize: 300
-offset: 0
