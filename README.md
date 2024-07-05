@@ -8,12 +8,13 @@ The code is portable, easy to understand, and modify.
 
 The following includes:
 1. [A summary of the MOS approach](#method).
-2. [The hardware requirements and dependencies installation](#hardware-and-dependencies).
-3. [Installation of the HMM-MOS repository](#installation).
-4. [An example of using HMM-MOS](#example).
-5. [Sample results interpretation](#sample-results-interpretation).
-6. [Results on different operating systems and processors](#results-on-different-operating-systems-and-processors).
-7. [References](#references).
+2. [Benchmark datasets](#benchmark-datasets)
+3. [The hardware requirements and dependencies installation](#hardware-and-dependencies).
+4. [Installation of the HMM-MOS repository](#installation).
+5. [An example of using HMM-MOS](#example).
+6. [Sample results interpretation](#sample-results-interpretation).
+7. [Results on different operating systems and processors](#results-on-different-operating-systems).
+8. [References](#references).
 
 ## Method
 The method is illustrated in the flowchart below.
@@ -34,6 +35,19 @@ The method has nine configuration parameters.
 There are also hardware settings:
 * ***rMax*** is the maximum radius of the point cloud. This is hardware-dependent and not a configuration parameter.
 * ***rMin*** is the minimum radius of the point cloud. This is hardware-dependent and not a configuration parameter.
+
+## Benchmark Datasets
+We test our algorithm using four open-source datasets. Click the links below to see the download instructions.
+* [Urban Dynamic Objects LiDAR Dataset (DOALS)](https://projects.asl.ethz.ch/datasets/doku.php?id=doals)
+    * Download instructions are also available on the [open-source Dynablox page](https://github.com/ethz-asl/dynablox?tab=readme-ov-file#Datasets). The dataset consists of eight sequences recorded with a handheld LiDAR in indoor and outdoor environments. The dataset is recorded in rosbags (see **note 1** below). We estimate the LiDAR pose using [SiMpLE](https://github.com/vb44/SiMpLE).
+* [Dynablox](https://github.com/ethz-asl/dynablox?tab=readme-ov-file#Datasets)
+    * This qualitative dataset was released by Dynablox. The datasets consist of eight sequences recorded with a handheld LiDAR, capturing the dynamic motion of various objects in complex environments. The dataset is recorded in rosbags (see **note 1** below). We estimate the LiDAR pose using [SiMpLE](https://github.com/vb44/SiMpLE).
+* [Sipailou Campus](https://github.com/xieKKKi/MotionBEV)
+    * The dataset consists of eight sequences using a Livox Avia mounted to a mobile robot. The sequences are available in the same format as Semantic-KITTI using *.bin* files and corresponding ground truth in *.label* files. The provided sensor pose estimates are used.
+* [Apollo Dataset](https://www.ipb.uni-bonn.de/html/projects/apollo_dataset/LiDAR-MOS.zip)
+    * Data sourced from [here](https://github.com/PRBonn/4DMOS/issues/29). The dataset consists of multiple sequences recorded from a vehicle in an urban environment. The provided pose estimates are used.
+
+**Note 1**: The HMM-MOS implementation provided here is designed to work with scan files in the *.bin* KITTI format with the sensor pose of each scan provided in a poses.txt file which is also in the KITTI format (nx12). To test the DOALS and Dynablox datasets, we converted each rosbag to a sequence of deskewed *.bin* scan files and estimated the sensor pose using SiMpLE to provide accurate odometry.
 
 ## Hardware and Dependencies
 This implementation has been tested on Ubuntu 20.04.5/6 LTS (Focal Fossa) with an Intel Core i7-10700K CPU @ 3.80GHz x 16 and 62.5 GiB memory.
@@ -137,7 +151,7 @@ endScan: 1079           # scan number [#]
 minRange: 0.5           # [m]
 maxRange: 120           # [m]
 outputFile: true        # true/false
-scanNumsToPrint: [969, 1079] # Leave as [] if not being used.
+scanNumsToPrint: [969, 1079] # Leave as [] if not being used. Scans indexed from 1.
 outputFileName: /outputFilePathAndName
 outputLabels: true      # true/false
 outputLabelFolder: /outputLabelFolderPath
@@ -151,16 +165,18 @@ convSize: 5             # odd integer
 localWindowSize: 3      # local window size [#]
 minOtsu: 3              # min dynamic voxels in convolution
 globalWindowSize: 300   # global window size [#]
-offset: 0               # 0 for causal system
-```
+```   
 
 ## Sample Results Interpretation
 <!-- How to interpret the output files and label files? -->
 <!-- Benchmark results interpretation -->
 <!-- Evaluation scripts -->
 <!-- Provide the ground truth and scans -->
+MOS results can be saved in (1) a single file with point cloud indicies for each scan per row for evaluation with *DOALS* ground truth, or (2) .label files from Semantic KITTI for evaluation with *Sipailou Campus* and *Apollo* datasets.
 
-## Results on Different Operating Systems and Processors
+Our results for the DOALS dataset for various voxel sizes and sensor ranges are available under *benchmarking/sampleResults/*.
+
+## Results on Different Operating Systems
 <!-- What has it been tested on? -->
 
 ## References
