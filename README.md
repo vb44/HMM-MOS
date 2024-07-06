@@ -3,6 +3,8 @@
 We propose a novel learning-free approach to segment moving objects in point cloud data.
 The foundation of the approach lies in modelling each voxel using a Hidden Markov Model (HMM) and probabilistically integrating beliefs into a global map using an HMM filter.
 
+https://github.com/vb44/HMM-MOS/assets/63623876/1d1dcd1c-5e1b-46f8-bdff-65d4719aaeb5
+
 This is the open-source implementation of the proposed approach. 
 The code is portable and easy to understand and modify.
 
