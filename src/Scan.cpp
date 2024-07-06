@@ -23,7 +23,8 @@ void Scan::addPointsWithIndex()
     int i = 0;
     std::for_each(scanPtsTf_.cbegin(), scanPtsTf_.cend(), [&](const auto &point)
     {
-        double ptNormSquared, ptDiff;
+        double ptNormSquared = 0;
+        double ptDiff = 0;
         for (int i = 0; i < 3; i++)
         {
             ptDiff = point(i)-sensorPose(i,3);

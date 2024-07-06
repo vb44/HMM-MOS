@@ -6,6 +6,3 @@ add_compile_options(-std=c++2a -O3)
 
 add_executable(evalIndFile
                evalIndFile.cpp)
-
-add_executable(evalLabels
-               evalLabels.cpp)

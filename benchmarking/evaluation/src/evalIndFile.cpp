@@ -26,7 +26,7 @@ int main(int argc, char** argv)
 {
     if (argc != 7)
     {
-        std::cerr << "Usage: ./eval gtFilePath estFilePath scanFolderPath seq minRange maxRange" << std::endl;
+        std::cerr << "Usage: ./evalIndFile gtFilePath estFilePath scanFolderPath seq minRange maxRange" << std::endl;
         return 1;
     }
 
@@ -94,8 +94,6 @@ int main(int argc, char** argv)
             allInds[ind] = 1;
         }
 
-        // std::cout << gtInds.size() << " " << estInds.size() << std::endl;
-
         int tp = 0;
         int fp = 0;
         int fn = 0;
@@ -124,19 +122,18 @@ int main(int argc, char** argv)
     }
 
     // Print the result.
-    // std::cout << std::fixed << std::setprecision(2) 
-    //           << "|-------|-----------|-------|" << std::endl
-    //           << "|  IoU  | Precision | Recall|" << std::endl
-    //           << "|-------|-----------|-------|" << std::endl;
-    // for (auto res : results)
-    // {
-    //     std::cout << std::fixed << std::setprecision(2) 
-    //               << "| " << res[0] << " |   " << res[1] << "   | " << res[2] << " | " << std::endl; 
-    // }
-    // std::cout << "|-------|-----------|-------|" << std::endl;
+    std::cout << std::fixed << std::setprecision(2) 
+              << "|-------|-----------|-------|" << std::endl
+              << "|  IoU  | Precision | Recall|" << std::endl
+              << "|-------|-----------|-------|" << std::endl;
+    for (auto res : results)
+    {
+        std::cout << std::fixed << std::setprecision(2) 
+                  << "| " << res[0] << " |   " << res[1] << "   | " << res[2] << " | " << std::endl; 
+    }
+    std::cout << "|-------|-----------|-------|" << std::endl;
 
-    // std::cout << "Mean IOU: " << iouSum/10.0 << std::endl;
-    std::cout << iouSum/10.0 << std::endl;
+    std::cout << "Mean IOU: " << iouSum/10.0 << std::endl;
 
     return 0;
 }
@@ -167,7 +164,7 @@ void readScan(const std::string &fileName, double minRange, double maxRange,
     std::ifstream file(fileName, std::ios::in | std::ios::binary);   
     if (!file)
     {
-        std::cerr << "./eval: Scan file " + fileName + 
+        std::cerr << "./evalIndFile: Scan file " + fileName + 
                      " could not be opened! Exiting program." << std::endl;
         exit(1);
     }

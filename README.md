@@ -45,7 +45,7 @@ We test our algorithm using four open-source datasets. Click the links below to 
 * [Sipailou Campus](https://github.com/xieKKKi/MotionBEV)
     * The dataset consists of eight sequences using a Livox Avia mounted to a mobile robot. The sequences are available in the same format as Semantic-KITTI using *.bin* files and corresponding ground truth in *.label* files. The provided sensor pose estimates are used.
 * [Apollo Dataset](https://www.ipb.uni-bonn.de/html/projects/apollo_dataset/LiDAR-MOS.zip)
-    * Data sourced from [here](https://github.com/PRBonn/4DMOS/issues/29). The dataset consists of multiple sequences recorded from a vehicle in an urban environment. The provided pose estimates are used.
+    * Data sourced from [here](https://github.com/PRBonn/MapMOS?tab=readme-ov-file). The dataset consists of multiple sequences recorded from a vehicle in an urban environment. The provided pose estimates are used.
 
 **Note 1**: The HMM-MOS implementation provided here is designed to work with scan files in the *.bin* KITTI format with the sensor pose of each scan provided in a poses.txt file which is also in the KITTI format (nx12). To test the DOALS and Dynablox datasets, we converted each rosbag to a sequence of deskewed *.bin* scan files and estimated the sensor pose using SiMpLE to provide accurate odometry.
 
@@ -76,7 +76,7 @@ sudo apt install libtbb-dev
 ```
 If the HMM-MOS repository build in the following section returns an error that it cannot find TBB for CMake, the following installation may help.
 ```bash
-git clone https://github.com/oneapi-src/oneTBB
+git clone https://github.com/oneapi-src/oneTBB.git
 cd oneTBB
 mkdir build && cd build
 cmake ..
@@ -92,7 +92,7 @@ sudo make install
 ```
 * Install the *unordered dense* library for the hashmap implementation.
 ```bash
-git clone https://github.com/martinus/unordered_dense
+git clone https://github.com/martinus/unordered_dense.git
 cd unordered_dense
 mkdir build && cd build
 cmake ..
@@ -102,6 +102,14 @@ sudo make install
 ```bash
 git clone https://github.com/jbeder/yaml-cpp.git
 cd yaml-cpp
+mkdir build && cd build
+cmake ..
+sudo make install
+```
+* Install the *rapidcsv* library for evaluating the DOALS sequences.
+```bash
+git clone https://github.com/d99kris/rapidcsv.git
+cd rapidcsv
 mkdir build && cd build
 cmake ..
 sudo make install
@@ -172,9 +180,279 @@ globalWindowSize: 300   # global window size [#]
 <!-- Benchmark results interpretation -->
 <!-- Evaluation scripts -->
 <!-- Provide the ground truth and scans -->
-MOS results can be saved in (1) a single file with point cloud indicies for each scan per row for evaluation with *DOALS* ground truth, or (2) .label files from Semantic KITTI for evaluation with *Sipailou Campus* and *Apollo* datasets.
+MOS results can be saved in,
+* a *single file* with point cloud indicies for each scan per row for evaluation with *DOALS* ground truth, or,
+* *.label* files from Semantic KITTI for evaluation with *Sipailou Campus* and *Apollo* datasets.
 
-Our results for the DOALS dataset for various voxel sizes and sensor ranges are available under *benchmarking/sampleResults/*.
+Our results for the DOALS dataset for various voxel sizes and sensor ranges are available under *benchmarking/sampleResults/*, and label files for all tested sequences can be found downloaded from [here](https:://addlink!.com).
+
+### Build evaluation tools
+Go to the *benchmarking/evaluation* folder.
+```bash
+cd benchmarking/evaluation
+```
+Make and enter the build directory.
+```bash
+mkdir build && cd build
+```
+Run *cmake* and *make*.
+```bash
+cmake ../src
+make
+```
+
+### DOALS Evaluation
+The DOALS dataset provides 10 manually labelled scans per sequence for evaluation in *indicies.csv* files.
+An evaluation tool is provided in *benchmarking/evaluation*.
+Once the evaluation tool is built as explained in the instructions above, use the tool directly or the provided bash script in the *benchmarking/evaluation/scripts* folder.
+
+Using the tool directly.
+```bash
+cd benchmarking/evaluation/build/
+./evalIndFile gtFilePath estFilePath scanFolderPath sequenceNum minRange maxRange
+```
+
+Using the provided script.
+```bash
+cd benchmarking/evaluation/scripts/
+./checkDOALS.sh # Edit the script parameters.
+```
+
+An example output of the DOALS Hauptgebaeude sequence 1 20m range evaluation is shown below.
+```bash
+|-------|-----------|-------|
+|  IoU  | Precision | Recall|
+|-------|-----------|-------|
+| 83.65 |   96.99   | 85.88 | 
+| 83.82 |   91.49   | 90.91 | 
+| 96.87 |   99.45   | 97.39 | 
+| 90.14 |   99.45   | 90.59 | 
+| 83.09 |   99.51   | 83.43 | 
+| 86.32 |   98.67   | 87.33 | 
+| 95.40 |   99.35   | 96.00 | 
+| 85.72 |   98.24   | 87.06 | 
+| 84.12 |   97.42   | 86.04 | 
+| 96.08 |   99.81   | 96.25 | 
+|-------|-----------|-------|
+Mean IOU: 88.52
+```
+
+### Sipailou Campus Evaluation
+The Sipailou campus dataset is provided by [MotionBEV](https://github.com/xieKKKi/MotionBEV/).
+MotionBEV provide evaluation tools to compute the *validation* (seq 06) and *test* (seq 00, 07) IoUs.
+To provide a fair evalution with the reuslts published in the [MotionBEV paper](https://ieeexplore.ieee.org/document/10287575), we use their evaluation tools.
+The evaluation steps are outlined below.
+
+***It is important to ensure the HMM-config has a minimum range of 3m and a maximum range of 50m as the ground truth is only labelled within these ranges.***
+
+1. Clone the MotionBEV repository.
+```bash
+git clone https://github.com/xieKKKi/MotionBEV.git
+```
+2. Copy the label predictions from HMM-MOS to the *sipailou-livox-kitti* directory sequence folder. The required file structure is:
+```bash
+# sipailou-livox-kitti directory tree
+# The HMM-MOS labels are copied into the predictions folder.
+
+sipailou-livox-kitti
+└── sequences
+    ├── 00
+    │   ├── calib.txt
+    │   ├── labels
+    │   ├── poses.txt
+    │   ├── predictions
+    │   └── velodyne
+    ├── 06
+    │   ├── calib.txt
+    │   ├── labels
+    │   ├── poses.txt
+    │   ├── predictions
+    │   └── velodyne
+    └── 07
+        ├── calib.txt
+        ├── labels
+        ├── poses.txt
+        ├── predictions
+        └── velodyne
+```
+3. Run the validation evaluation.
+```bash
+cd MotionBEV
+python3 utils/evaluate_mos.py --dataset /pathToFolder/sipailou-livox-kitti/ --datacfg config/livox-SEU-MOS.yaml -s valid
+```
+The expected output is shown below.
+```bash
+********************************************************************************
+INTERFACE:
+Data:  /media/vb-dell/Expansion/datasets/sipailou-livox-kitti/
+Predictions:  /media/vb-dell/Expansion/datasets/sipailou-livox-kitti/
+Backend:  numpy
+Split:  valid
+Config:  config/livox-SEU-MOS.yaml
+Limit:  None
+Codalab:  None
+********************************************************************************
+Opening data config file config/livox-SEU-MOS.yaml
+[IOU EVAL] IGNORE:  []
+[IOU EVAL] INCLUDE:  [0 1]
+labels:  3191
+predictions:  3191
+Evaluating sequences: 10% 20% 30% 40% 50% 60% 70% 80% 90% ********************************************************************************
+below can be copied straight for paper table
+iou_moving: 0.852
+```
+3. Run the test evaluation.
+```bash
+cd MotionBEV
+python3 utils/evaluate_mos.py --dataset /pathToFolder/sipailou-livox-kitti/ --datacfg config/livox-SEU-MOS.yaml -s test
+```
+The expected output is shown below.
+```bash
+********************************************************************************
+INTERFACE:
+Data:  /media/vb-dell/Expansion/datasets/sipailou-livox-kitti/
+Predictions:  /media/vb-dell/Expansion/datasets/sipailou-livox-kitti/
+Backend:  numpy
+Split:  test
+Config:  config/livox-SEU-MOS.yaml
+Limit:  None
+Codalab:  None
+********************************************************************************
+Opening data config file config/livox-SEU-MOS.yaml
+[IOU EVAL] IGNORE:  []
+[IOU EVAL] INCLUDE:  [0 1]
+labels:  6201
+predictions:  6201
+Evaluating sequences: 10% 20% 30% 40% 50% 60% 70% 80% 90% ********************************************************************************
+below can be copied straight for paper table
+iou_moving: 0.862
+```
+
+### Apollo Evaluation
+The post processed and labelled Apollo dataset can be downloaded from the opensource MapMOS github page who have kindly made the data available [here](https://github.com/PRBonn/MapMOS).
+The *semantic-kitti-api* tools are used to evaluate the results.
+The steps are outlined below.
+
+1. Clone the semantic-kitti-api.
+```bash
+git clone https://github.com/PRBonn/semantic-kitti-api.git
+```
+2. Copy the label predictions from HMM-MOS to the LiDAR-MOS directory. The required file structure is:
+```bash
+LiDAR-MOS
+├── dataset_description.yml
+└── sequences
+    ├── 00
+    │   ├── calib.txt
+    │   ├── labels
+    │   ├── poses.txt
+    │   ├── predictions
+    │   ├── suma_poses.txt
+    │   ├── velodyne
+    │   └── velodyne_poses_kitti.txt
+    ├── 03
+        ├── calib.txt
+        ├── labels
+        ├── poses.txt
+        ├── predictions
+        ├── suma_poses.txt
+        ├── velodyne
+        └── velodyne_poses_kitti.txt
+```
+3. We want to evaluate sequence 00 and 03. Edit the *config/semantic-kitti-mos.yaml* file to replace *8* in the valid field to *0*.
+```python
+split: # sequence numbers
+  train:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 9
+    - 10
+  valid:
+    - 0 # was 8 originally
+  test:
+    - 11
+    - 12
+    - 13
+    - 14
+    - 15
+    - 16
+    - 17
+    - 18
+    - 19
+    - 20
+    - 21
+```
+4. Run the evaluation for sequence 00 and 03.
+```bash
+python3 evaluate_mos.py --dataset /pathToFolder/LiDAR-MOS/ -s valid
+```
+The expected output is shown below.
+```bash
+********************************************************************************
+INTERFACE:
+Data:  /pathToFolder/LiDAR-MOS/
+Predictions:  /pathToFolder/LiDAR-MOS/
+Backend:  numpy
+Split:  valid
+Config:  config/semantic-kitti-mos.yaml
+Limit:  None
+Codalab:  None
+********************************************************************************
+Opening data config file config/semantic-kitti-mos.yaml
+Ignoring xentropy class  0  in IoU evaluation
+[IOU EVAL] IGNORE:  [0]
+[IOU EVAL] INCLUDE:  [1 2]
+labels:  2000
+predictions:  2000
+Evaluating sequences: 10% 20% 30% 40% 50% 60% 70% 80% 90% ********************************************************************************
+below can be copied straight for paper table
+iou_moving: 0.573
+```
+Following a similar process, replace the valid sequence to 3.
+The expected output is shown below.
+```bash
+********************************************************************************
+INTERFACE:
+Data:  /pathToFolder/LiDAR-MOS/
+Predictions:  /pathToFolder/LiDAR-MOS/
+Backend:  numpy
+Split:  valid
+Config:  config/semantic-kitti-mos.yaml
+Limit:  None
+Codalab:  None
+********************************************************************************
+Opening data config file config/semantic-kitti-mos.yaml
+Ignoring xentropy class  0  in IoU evaluation
+[IOU EVAL] IGNORE:  [0]
+[IOU EVAL] INCLUDE:  [1 2]
+labels:  500
+predictions:  500
+Evaluating sequences: 10% 20% 30% 40% 50% 60% 70% 80% 90% ********************************************************************************
+below can be copied straight for paper table
+iou_moving: 0.905
+```
+
+
+<!-- ### Label Evaluation
+Example usage of the label evaluation tool is provided below.
+```bash
+cd benchmarking/evaluation/build/
+./evalLabels gtFilePath estFilePath scanFolderPath minRange maxRange startScan
+```
+An example output of the Sipailou Campus sequence 07 evaluation between ranges 3-50m is shown below.
+```bash
+|-------|-----------|--------|
+|  IoU  | Precision | Recall |
+|-------|-----------|--------|
+| 87.48 |   92.52   |  94.14 |
+|-------|-----------|--------|
+``` -->
 
 ## Results on Different Operating Systems
 <!-- What has it been tested on? -->

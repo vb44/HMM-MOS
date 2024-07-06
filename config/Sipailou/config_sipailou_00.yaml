@@ -4,7 +4,7 @@ scanPath: /pathToDatasetFolder/sipailou-livox-kitti/00/velodyne/
 posePath: /pathToDatasetFolder/sipailou-livox-kitti/00/poses.txt
 startScan: 1
 endScan: 2648
-minRange: 0
+minRange: 3
 maxRange: 50
 outputFile: false
 scanNumsToPrint: []

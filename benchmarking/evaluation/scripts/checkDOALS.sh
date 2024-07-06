@@ -1,51 +1,24 @@
-minRange=1
+# *****************************************************************************
+# Evaluates a DOALS sequence.
+# | -------------------------------|
+# | Seq | Sequence name            |
+# |--------------------------------|
+# |  1  | hauptgebaeude/sequence_1 |
+# |  2  | hauptgebaeude/sequence_2 |
+# |  3  | niederdorf/sequence_1    |
+# |  4  | niederdorf/sequence_2    |
+# |  5  | shopville/sequence_1     |
+# |  6  | shopville/sequence_2     |
+# |  7  | station/sequence_1       |
+# |  8  | station/sequence_2       |
+# | -------------------------------|
+# *****************************************************************************
+seqNum=1
+minRange=0.5
 maxRange=20
-range=range_$maxRange
 
-seq=1
-gtFilePath=/media/vb/Gift/DOALS/processed/hauptgebaeude/sequence_1/indices.csv
-estFilePath=/home/vb/Documents/public_repositories/QCD_MOS/results/test_seq${seq}
-scanFolderPath=/media/vb/VB/datasets/DOALS/hauptgebaeude/sequence_1/binFiles/
-../build/evalIndFile $gtFilePath $estFilePath $scanFolderPath $seq $minRange $maxRange
+gtFilePath=/pathToSequenceFolder/hauptgebaeude/sequence_1/indices.csv
+estFilePath=/pathToResultsFolder/test_seq1
+scanFolderPath=/pathToSequenceFolder/hauptgebaeude/sequence_1/binFiles/
 
-seq=2
-gtFilePath=/media/vb/Gift/DOALS/processed/hauptgebaeude/sequence_2/indices.csv
-estFilePath=/home/vb/Documents/public_repositories/QCD_MOS/results/test_seq${seq}
-scanFolderPath=/media/vb/VB/datasets/DOALS/hauptgebaeude/sequence_2/binFiles/
-../build/evalIndFile $gtFilePath $estFilePath $scanFolderPath $seq $minRange $maxRange
-
-seq=3
-gtFilePath=/media/vb/Gift/DOALS/processed/niederdorf/sequence_1/indices.csv
-estFilePath=/home/vb/Documents/public_repositories/QCD_MOS/results/test_seq${seq}
-scanFolderPath=/media/vb/VB/datasets/DOALS/niederdorf/sequence_1/binFiles/
-../build/evalIndFile $gtFilePath $estFilePath $scanFolderPath $seq $minRange $maxRange
-
-seq=4
-gtFilePath=/media/vb/Gift/DOALS/processed/niederdorf/sequence_2/indices.csv
-estFilePath=/home/vb/Documents/public_repositories/QCD_MOS/results/test_seq${seq}
-scanFolderPath=/media/vb/VB/datasets/DOALS/niederdorf/sequence_2/binFiles/
-../build/evalIndFile $gtFilePath $estFilePath $scanFolderPath $seq $minRange $maxRange
-
-seq=5
-gtFilePath=/media/vb/Gift/DOALS/processed/shopville/sequence_1/indices.csv
-estFilePath=/home/vb/Documents/public_repositories/QCD_MOS/results/test_seq${seq}
-scanFolderPath=/media/vb/VB/datasets/DOALS/shopville/sequence_1/binFiles/
-../build/evalIndFile $gtFilePath $estFilePath $scanFolderPath $seq $minRange $maxRange
-
-seq=6
-gtFilePath=/media/vb/Gift/DOALS/processed/shopville/sequence_2/indices.csv
-estFilePath=/home/vb/Documents/public_repositories/QCD_MOS/results/test_seq${seq}
-scanFolderPath=/media/vb/VB/datasets/DOALS/shopville/sequence_2/binFiles/
-../build/evalIndFile $gtFilePath $estFilePath $scanFolderPath $seq $minRange $maxRange
-
-seq=7
-gtFilePath=/media/vb/Gift/DOALS/processed/station/sequence_1/indices.csv
-estFilePath=/home/vb/Documents/public_repositories/QCD_MOS/results/test_seq${seq}
-scanFolderPath=/media/vb/VB/datasets/DOALS/station/sequence_1/binFiles/
-../build/evalIndFile $gtFilePath $estFilePath $scanFolderPath $seq $minRange $maxRange
-
-seq=8
-gtFilePath=/media/vb/Gift/DOALS/processed/station/sequence_2/indices.csv
-estFilePath=/home/vb/Documents/public_repositories/QCD_MOS/results/test_seq${seq}
-scanFolderPath=/media/vb/VB/datasets/DOALS/station/sequence_2/binFiles/
-../build/evalIndFile $gtFilePath $estFilePath $scanFolderPath $seq $minRange $maxRange
+../build/evalIndFile $gtFilePath $estFilePath $scanFolderPath $seqNum $minRange $maxRange
