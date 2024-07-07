@@ -1,7 +1,7 @@
 ---
 # Test setup.
 scanPath: /pathToDatasetFolder/LiDAR-MOS/sequences/03/velodyne/
-posePath: /pathToDatasetFolder/poses.txt
+posePath: /pathToDatasetFolder/LiDAR-MOS/sequences/03/poses.txt
 startScan: 1
 endScan: 500
 minRange: 0.5

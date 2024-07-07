@@ -1,9 +1,12 @@
 # Moving Object Segmentation in Point Cloud Data using Hidden Markov Models
-
+<h3><i>The paper is currently under review!</i></h3>
 We propose a novel learning-free approach to segment moving objects in point cloud data.
 The foundation of the approach lies in modelling each voxel using a Hidden Markov Model (HMM) and probabilistically integrating beliefs into a global map using an HMM filter.
+We extend classic image processing to accurately detect dynamic object in point cloud data.
 
-https://github.com/vb44/HMM-MOS/assets/63623876/1d1dcd1c-5e1b-46f8-bdff-65d4719aaeb5
+Find all demo videos [here](https://drive.google.com/drive/folders/1NucGrdpv-ofZCdMB47y2Crrrjw_VuYQo?usp=sharing), with a snapshot below!
+
+[Click here for a demo!](https://github.com/vb44/HMM-MOS/assets/63623876/1d1dcd1c-5e1b-46f8-bdff-65d4719aaeb5)
 
 This is the open-source implementation of the proposed approach. 
 The code is portable and easy to understand and modify.
@@ -19,9 +22,9 @@ The following includes:
 8. [References](#references).
 
 ## Method
-The method is illustrated in the flowchart below.
+<!-- The method is illustrated in the flowchart below.
 
-![Proposed approach](/media/processFlowchart.png)
+![Proposed approach](/media/processFlowchart.png) -->
 
 The method has nine configuration parameters.
 1. ***A*** is the HMM state transition matrix (fixed for the MOS task)
@@ -178,10 +181,6 @@ globalWindowSize: 300   # global window size [#]
 ```   
 
 ## Sample Results Interpretation
-<!-- How to interpret the output files and label files? -->
-<!-- Benchmark results interpretation -->
-<!-- Evaluation scripts -->
-<!-- Provide the ground truth and scans -->
 MOS results can be saved in,
 * a *single file* with point cloud indicies for each scan per row for evaluation with *DOALS* ground truth, or,
 * *.label* files from Semantic KITTI for evaluation with *Sipailou Campus* and *Apollo* datasets.
@@ -286,8 +285,8 @@ The expected output is shown below.
 ```bash
 ********************************************************************************
 INTERFACE:
-Data:  /media/vb-dell/Expansion/datasets/sipailou-livox-kitti/
-Predictions:  /media/vb-dell/Expansion/datasets/sipailou-livox-kitti/
+Data:  /pathToFolder/sipailou-livox-kitti/
+Predictions:  /pathToFolder/sipailou-livox-kitti/
 Backend:  numpy
 Split:  valid
 Config:  config/livox-SEU-MOS.yaml
@@ -312,8 +311,8 @@ The expected output is shown below.
 ```bash
 ********************************************************************************
 INTERFACE:
-Data:  /media/vb-dell/Expansion/datasets/sipailou-livox-kitti/
-Predictions:  /media/vb-dell/Expansion/datasets/sipailou-livox-kitti/
+Data:  /pathToFolder/sipailou-livox-kitti/
+Predictions:  /pathToFolder/sipailou-livox-kitti/
 Backend:  numpy
 Split:  test
 Config:  config/livox-SEU-MOS.yaml
@@ -439,25 +438,6 @@ Evaluating sequences: 10% 20% 30% 40% 50% 60% 70% 80% 90% **********************
 below can be copied straight for paper table
 iou_moving: 0.905
 ```
-
-
-<!-- ### Label Evaluation
-Example usage of the label evaluation tool is provided below.
-```bash
-cd benchmarking/evaluation/build/
-./evalLabels gtFilePath estFilePath scanFolderPath minRange maxRange startScan
-```
-An example output of the Sipailou Campus sequence 07 evaluation between ranges 3-50m is shown below.
-```bash
-|-------|-----------|--------|
-|  IoU  | Precision | Recall |
-|-------|-----------|--------|
-| 87.48 |   92.52   |  94.14 |
-|-------|-----------|--------|
-``` -->
-
-## Results on Different Operating Systems
-<!-- What has it been tested on? -->
 
 ## References
 [1] [eigen library](https://eigen.tuxfamily.org/dox/GettingStarted.html)

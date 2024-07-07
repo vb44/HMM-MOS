@@ -117,7 +117,7 @@ void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistor
         }
     });
     
-    // Clean the convolution scores.
+    // Average the convolution scores using median filtering.
     findMedianValue(scan);
 
     // Save the scan in the scan history.
@@ -229,7 +229,7 @@ void Map::findMedianValue(Scan &scan)
         int x = vox(0);
         int y = vox(1);
         int z = vox(2);
-        int edge = (3-1)/2; // nearest neighbour
+        int edge = (3-1)/2; // nearest neighbour, so convolutoin size, m=3
         for (int i = x - edge; i < x + edge + 1; ++i)
         {
             for (int j = y - edge; j < y + edge + 1; ++j)
