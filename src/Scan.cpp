@@ -41,7 +41,6 @@ void Scan::addPointsWithIndex()
                 v.pointIndicies.push_back(i);
                 scan_.insert({voxel, v});
                 occupiedVoxels.push_back(voxel);
-                // ptsOcc.push_back({point(0),point(1),point(2)}); // TODO: Check quantization.
                 ptsOccupied.push_back({voxel(0)*voxelSize_,
                                        voxel(1)*voxelSize_,
                                        voxel(2)*voxelSize_});
@@ -122,17 +121,11 @@ void Scan::findObservedVoxels()
                          (ptDiffY*ptDiffY) +
                          (ptDiffZ*ptDiffZ); 
 
-                if (ptNorm <= (maxRange_*maxRange_))// && !occFlag)// && n >= pow(3,2))
+                if (ptNorm <= (maxRange_*maxRange_))
                 {
                     ptsObs.push_back({x0,y0,z0});
                 }
                 
-                // if (ptNorm > (minRange_*minRange_) && scan_.contains({x0,y0,z0}))
-                // if (!occFlag && scan_.contains({x0,y0,z0}))
-                // {
-                //     occFlag = true;
-                //     break;
-                // }
                 // Update the next voxel to be traversed.
                 x1 -= dx; if (x1 < 0) { x1 += dm; x0 += sx; } 
                 y1 -= dy; if (y1 < 0) { y1 += dm; y0 += sy; } 

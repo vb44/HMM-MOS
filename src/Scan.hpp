@@ -10,7 +10,6 @@
 #include <vector>
 
 #include "ankerl/unordered_dense.h"
-#include "tsl/robin_map.h"
 #include "tbb/parallel_for.h"
 
 #include "ConfigParser.hpp"
@@ -193,9 +192,6 @@ class Scan
         // comparison with the minOtsu configuration parameter. 
         double dynThreshold;
 
-        // TODO: Check if needed.
-        // double getTransitionProb(Voxel &voxel);
-
     private:
         /**
          * @brief States of each voxel in the scan.
@@ -235,7 +231,6 @@ class Scan
         boost::circular_buffer<std::vector<Eigen::Vector3d> > ptsOccupiedHistory_;
 
         // Voxelized scan.         
-        // tsl::robin_map<Voxel, ScanVoxelState, VoxelHash> scan_;
         ankerl::unordered_dense::map<Voxel, ScanVoxelState, VoxelHash> scan_; 
 
         /**

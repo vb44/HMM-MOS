@@ -89,8 +89,6 @@ void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistor
             double totalScore = 0;
             for (unsigned int i = 0; i < nPtsValid.size(); i++)
             {
-                // double score = 0;
-                // if (nPtsValid[i](0) != x && nPtsValid[i](1) != y && nPtsValid[i](2) != z)
                 {
                     // Check if the voxel exists in the map.
                     if (map_.contains(nPtsValid[i]) &&
@@ -101,12 +99,9 @@ void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistor
                             scan.checkIfEntryExists(nPtsValid[i]))
                         {
                             totalScore = totalScore + 1;
-                            // totalScore = totalScore + map_[nPtsValid[i]].xHat(1);
                         }
                     } else
                     {
-                        // voxHasUnobservedNeighbor = true;
-                        // break;
                         totalScore = totalScore - 1;
                     }
                 }
@@ -166,8 +161,6 @@ void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistor
     // current scan and still have some confidence of being dynamic.
     for (auto x: prevScanDynamicVoxels_)
     {
-        // if (scan.checkIfEntryExists(x) && scan.getConvScoreOverWindow(x) > 0)
-        // if (prevScanOccupancy.CheckIfEntryExists(x) && prevScanOccupancy.map_[x].convScore > 3)
         if (scan.checkIfEntryExists(x) && scan.getConvScoreOverWindow(x) > minOtsu_)
         {
             scan.setDynamicHighConfidence(x);
@@ -303,7 +296,6 @@ void Map::update(Scan &scan, unsigned int scanNum)
                            voxel.coeffRef(1)*voxelSize_,
                            voxel.coeffRef(2)*voxelSize_};
             ptCloudKdTree->knnSearch(&pt[0], numResults, &retIndex, &map_[voxel].closestDistance);
-            // map_[voxel].closestDistance = outDistSqr;
             
             // Update voxel likelihoods.
             Eigen::Matrix3d B;
@@ -316,15 +308,11 @@ void Map::update(Scan &scan, unsigned int scanNum)
             map_[voxel].scanLastSeen = scanNum;
             
             // Update the voxel state if the probability of being in that state is greater than the predefined threshold.
-            // std::vector<double> vec(voxelMap.map_[pointsObservedUnique[i]].xHat.data(), voxelMap.map_[pointsObservedUnique[i]].xHat.data() + hmmConfigParams.numStates);                
-            // double maxElement = *std::max_element(&vec[0], &vec[0]+hmmConfigParams.numStates);
-            // int maxElementIndex = std::find(&vec[0], &vec[0]+hmmConfigParams.numStates, maxElement) - &vec[0];
-
             int maxElementIndex = map_[voxel].xHat(0) > map_[voxel].xHat(1) ? 0 : 1;
             maxElementIndex = map_[voxel].xHat(2) > map_[voxel].xHat(maxElementIndex) ? 2 : maxElementIndex;
             double maxElement = map_[voxel].xHat(maxElementIndex);
 
-            if (maxElement > hmmConfig.beliefThreshold)// && maxElement != voxelStates[voxelNum].currentState[0]
+            if (maxElement > hmmConfig.beliefThreshold)
             { 
                 // Check for a change in state.
                 // Looking for a change in state from free to occupied and vice versa.
