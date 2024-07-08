@@ -185,22 +185,7 @@ MOS results can be saved in,
 * a *single file* with point cloud indicies for each scan per row for evaluation with *DOALS* ground truth, or,
 * *.label* files from Semantic KITTI for evaluation with *Sipailou Campus* and *Apollo* datasets.
 
-Our results for the DOALS dataset for various voxel sizes and sensor ranges are available under *benchmarking/sampleResults/*, and label files for all tested sequences can be found downloaded from [here](https:://addlink!.com).
-
-### Build evaluation tools
-Go to the *benchmarking/evaluation* folder.
-```bash
-cd benchmarking/evaluation
-```
-Make and enter the build directory.
-```bash
-mkdir build && cd build
-```
-Run *cmake* and *make*.
-```bash
-cmake ../src
-make
-```
+Our results for the DOALS dataset for various voxel sizes and sensor ranges are available under *benchmarking/sampleResults/*, and label files for all tested sequences can be found downloaded from [here](https://drive.google.com/drive/folders/1NucGrdpv-ofZCdMB47y2Crrrjw_VuYQo?usp=sharing).
 
 ### Sipailou Campus Evaluation
 The Sipailou campus dataset is provided by [MotionBEV](https://github.com/xieKKKi/MotionBEV/).
@@ -402,6 +387,23 @@ iou_moving: 0.905
 ### DOALS Evaluation
 The DOALS dataset provides 10 manually labelled scans per sequence for evaluation in *indicies.csv* files.
 An evaluation tool is provided in *benchmarking/evaluation*.
+
+#### Build evaluation tools for DOALS
+Go to the *benchmarking/evaluation* folder.
+```bash
+cd benchmarking/evaluation
+```
+Make and enter the build directory.
+```bash
+mkdir build && cd build
+```
+Run *cmake* and *make*.
+```bash
+cmake ../src
+make
+```
+
+#### Evaluate results
 Once the evaluation tool is built as explained in the instructions above, use the tool directly or the provided bash script in the *benchmarking/evaluation/scripts* folder.
 
 Using the tool directly.
