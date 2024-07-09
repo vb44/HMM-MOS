@@ -63,9 +63,17 @@ The installation instructions are detailed below.
 ```bash
 sudo apt install git
 ```
-* Require a g++ compiler.
+* Require a g++ v10 compiler.
 ```bash
-sudo apt install g++
+sudo apt install g++-10
+```
+Ensure the newer compiler is used.
+```bash
+g++ --version
+```
+If the incorrect version is displayed, [set the correct compiler](https://askubuntu.com/questions/26498/how-to-choose-the-default-gcc-and-g-version).
+```bash
+sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 10
 ```
 * CMake is required to compile the libraries and the repository.
 ```bash
@@ -110,6 +118,10 @@ cd yaml-cpp
 mkdir build && cd build
 cmake ..
 sudo make install
+```
+* Install the *boost* libraries.
+```bash
+sudo apt-get install libboost-all-dev
 ```
 * Install the *rapidcsv* library for evaluating the DOALS sequences.
 ```bash
