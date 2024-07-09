@@ -4,7 +4,7 @@ We propose a novel learning-free approach to segment moving objects in point clo
 The foundation of the approach lies in modeling each voxel using a Hidden Markov Model (HMM) and probabilistically integrating beliefs into a global map using an HMM filter.
 We extend classic image processing to accurately detect dynamic objects in point cloud data.
 
-Find all demo videos and sample results [here](https://drive.google.com/drive/folders/1NucGrdpv-ofZCdMB47y2Crrrjw_VuYQo?usp=sharing), with a snapshot below!
+**Find all demo videos and sample results [here](https://drive.google.com/drive/folders/1NucGrdpv-ofZCdMB47y2Crrrjw_VuYQo?usp=sharing), with a snapshot below!**
 
 [Click here for a demo!](https://github.com/vb44/HMM-MOS/assets/63623876/1d1dcd1c-5e1b-46f8-bdff-65d4719aaeb5)
 
