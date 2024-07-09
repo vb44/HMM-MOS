@@ -5,7 +5,7 @@ posePath: /pathToDatasetFolder/shopville/sequence_2/binFiles/poses.txt
 startScan: 1
 endScan: 1988
 minRange: 0.5
-maxRange: 120
+maxRange: 20
 outputFile: true
 scanNumsToPrint: [199, 399, 527, 599, 799, 999, 1199, 1399, 1599, 1799]
 outputFileName: /saveFolderPath/results/test_seq6

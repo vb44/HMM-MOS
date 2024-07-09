@@ -5,7 +5,7 @@ posePath: /pathToDatasetFolder/niederdorf/sequence_1/poses.txt
 startScan: 1
 endScan: 1768
 minRange: 0.5
-maxRange: 120
+maxRange: 20
 outputFile: true
 scanNumsToPrint: [76, 256, 436, 616, 796, 976, 1156, 1336, 1516, 1696]
 outputFileName: /saveFolderPath/results/test_seq3

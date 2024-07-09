@@ -1,7 +1,7 @@
 ---
 # Test setup.
-scanPath: /pathToDatasetFolder/sipailou-livox-kitti/06/velodyne/
-posePath: /pathToDatasetFolder/sipailou-livox-kitti/06/poses.txt
+scanPath: /pathToDatasetFolder/sipailou-livox-kitti/sequences/06/velodyne/
+posePath: /pathToDatasetFolder/sipailou-livox-kitti/sequences/06/poses.txt
 startScan: 1
 endScan: 3191
 minRange: 3

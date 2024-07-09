@@ -63,6 +63,10 @@ The installation instructions are detailed below.
 ```bash
 sudo apt install git
 ```
+* Install the g++ compiler.
+```bash
+sudo apt install g++
+```
 * Require a g++ v10 compiler.
 ```bash
 sudo apt install g++-10
@@ -70,6 +74,13 @@ sudo apt install g++-10
 Ensure the newer compiler is used.
 ```bash
 g++ --version
+```
+The expected output is shown below.
+```bash
+g++ (Ubuntu 10.5.0-1ubuntu1~20.04) 10.5.0
+Copyright (C) 2020 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 ```
 If the incorrect version is displayed, [set the correct compiler](https://askubuntu.com/questions/26498/how-to-choose-the-default-gcc-and-g-version).
 ```bash
