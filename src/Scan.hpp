@@ -191,8 +191,7 @@ class Scan
         // The Otsu threshold for the dynamic voxel segmentation used for
         // comparison with the minOtsu configuration parameter. 
         double dynThreshold;
-
-    private:
+        double scanNum;
         /**
          * @brief States of each voxel in the scan.
          *        Note the dynamic object segmentation is performed in the
@@ -204,6 +203,9 @@ class Scan
             // Voxel dynamicity.
             bool isDynamic = false;
             bool isDynamicHighConfidence = false;
+            bool isDynamicInDynamicOccupancyRegion = false;
+            bool hasUnobservedNeighbour = false;
+            bool isDynamicFromBackendConv = false;
 
             // Point cloud indicies in the current voxel.
             std::vector<unsigned int> pointIndicies;
@@ -212,9 +214,14 @@ class Scan
             double convScore = 0;
 
             // Spatio-temporal 4D convolution score.
-            double convScoreOverWindow = 0; 
-        };
+            double convScoreOverWindow = 0;
 
+            double convScoreBackEnd = 0; 
+        };
+        // Voxelized scan.         
+        ankerl::unordered_dense::map<Voxel, ScanVoxelState, VoxelHash> scan_; 
+
+        private:
 
         // Configuration.
         int dim_;
@@ -230,8 +237,6 @@ class Scan
         // History of the scan points used for KD-Tree construction. 
         boost::circular_buffer<std::vector<Eigen::Vector3d> > ptsOccupiedHistory_;
 
-        // Voxelized scan.         
-        ankerl::unordered_dense::map<Voxel, ScanVoxelState, VoxelHash> scan_; 
 
         /**
          * @brief Add the measurements from the new scan to the

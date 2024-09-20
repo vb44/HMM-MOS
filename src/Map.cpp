@@ -2,6 +2,7 @@
 
 Map::Map(const ConfigParser &config)
     : globalWinLen_(config.globalWindowSize)
+    , numScansDelay_(config.numScansDelay)
     , maxRange_(config.maxRange)
     , minRange_(config.minRange)
     , voxelSize_(config.voxelSize)
@@ -10,7 +11,6 @@ Map::Map(const ConfigParser &config)
     , nBins_(100) // Hardcoded - used for histogram thresholding.
 {
     hmmConfig.beliefThreshold = config.beliefThreshold;
-    hmmConfig.sigFree = config.freeSigma;
     hmmConfig.sigOcc = config.occupancySigma;
 
     // Pre-compute the convolution edge size.
@@ -18,7 +18,6 @@ Map::Map(const ConfigParser &config)
 
     // Pre-compute the convolution computation constants.
     normDistOccDen_ = 1/(2*pow(hmmConfig.sigOcc, 2));
-    normDistFreeDen_ = 1/(2*pow(hmmConfig.sigFree, 2));
 }
 
 Map::~Map()
@@ -60,7 +59,7 @@ void Map::convertToKdTreeContainer(std::vector<Eigen::Vector3d> &pts)
     });
 }
 
-void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistory)
+void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistory, DynamicRegion &staticMap)
 {
     tbb::parallel_for(
     tbb::blocked_range<pointsIterator>(scan.occupiedVoxels.cbegin(), scan.occupiedVoxels.cend()),
@@ -95,13 +94,14 @@ void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistor
                        (map_[nPtsValid[i]].currentState != 0) && 
                        (scanNum_ - map_[nPtsValid[i]].currentStateScan < globalWinLen_))
                     {
-                        if (map_[nPtsValid[i]].lastStateChangeScan[1] == scanNum_ &&
-                            scan.checkIfEntryExists(nPtsValid[i]))
+                        // if ((map_[nPtsValid[i]].lastStateChangeScan[1] == scanNum_ && scan.checkIfEntryExists(nPtsValid[i])))
+                        if ((map_[nPtsValid[i]].lastStateChangeScan[1] >= scanNum_- numScansDelay_ && scan.checkIfEntryExists(nPtsValid[i])))
                         {
                             totalScore = totalScore + 1;
                         }
                     } else
                     {
+                        scan.scan_[voxel].hasUnobservedNeighbour = true;
                         totalScore = totalScore - 1;
                     }
                 }
@@ -207,7 +207,89 @@ void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistor
         {
             prevScanDynamicVoxels_.push_back(x);
         } 
-    }    
+    }
+
+    // ------------------------------------------------------------------------
+    tbb::parallel_for(
+    tbb::blocked_range<pointsIterator>(scan.occupiedVoxels.cbegin(), scan.occupiedVoxels.cend()),
+    [&](tbb::blocked_range<pointsIterator> r)
+    {
+        for (const auto &voxel : r)
+        {
+            // Extract the point indicies.
+            int x = voxel.coeffRef(0);
+            int y = voxel.coeffRef(1);
+            int z = voxel.coeffRef(2);
+            
+            // Find the neighbours in the convolution size.
+            std::vector<Eigen::Vector3i> nPtsValid;
+            for (int i = x - edge_; i < x + edge_ + 1; ++i)
+            {
+                for (int j = y - edge_; j < y + edge_ + 1; ++j)
+                {
+                    for (int k = z - edge_; k < z + edge_ + 1; ++k)
+                    {
+                        nPtsValid.push_back({i, j, k});
+                    }
+                }
+            }
+            bool voxHasUnobservedNeighbor = false;
+            double totalScore = 0;
+            for (unsigned int i = 0; i < nPtsValid.size(); i++)
+            {
+                    // Check if the voxel exists in the map.
+                    if (map_.contains(nPtsValid[i]) &&
+                       (map_[nPtsValid[i]].currentState != 0) && 
+                       (scanNum_ - map_[nPtsValid[i]].currentStateScan < globalWinLen_))
+                    {
+                        if (staticMap.map_.contains(nPtsValid[i]) && staticMap.map_[nPtsValid[i]].isDynamicHighConfidence)
+                        {
+                            totalScore = totalScore + 1.0;
+                        }
+                    }
+                    else
+                    {
+                        scan.scan_[voxel].hasUnobservedNeighbour = true;
+                        totalScore = 0;
+                        break;
+                    }
+            }
+            totalScore = std::max(totalScore,0.0);
+            if (!voxHasUnobservedNeighbor)
+                scan.scan_[voxel].convScoreBackEnd = totalScore;
+        }
+    });
+
+    std::vector<double> scoresBackEnd;
+    for (size_t i = 0; i < scan.occupiedVoxels.size(); i++)
+    {
+        if (scan.scan_[scan.occupiedVoxels[i]].convScoreBackEnd > 0)
+            scoresBackEnd.push_back(scan.scan_[scan.occupiedVoxels[i]].convScoreBackEnd);
+    }
+
+    if (scoresBackEnd.size() > 0)
+    {
+        // Find the dynamic voxels using the convolution scores.
+        // These are the high confidence dynamic voxel estimates.
+        Eigen::VectorXd binCounts2 = Eigen::VectorXd::Zero(nBins_);
+        Eigen::VectorXd edges2;
+        findHistogramCounts(nBins_, scoresBackEnd, binCounts2, edges2);
+        int level2 = otsu(binCounts2);    
+        double thresholdLimit2 = 0;
+        if (level2 > 0)
+        {
+            thresholdLimit2 = edges2(level2-1);
+            for (unsigned int j = 0; j < scan.occupiedVoxels.size(); j++)
+            {
+                if (scan.scan_[scan.occupiedVoxels[j]].convScoreBackEnd > thresholdLimit2)
+                {
+                    scan.setDynamicHighConfidence(scan.occupiedVoxels[j]);
+                    scan.scan_[scan.occupiedVoxels[j]].isDynamicFromBackendConv = true;
+                }
+            }
+        }
+    }
+    // ------------------------------------------------------------------------   
 }
 
 void Map::findMedianValue(Scan &scan)
@@ -259,7 +341,7 @@ void Map::removeVoxelsOutsideWindowAndMaxRange()
         ptDiffZ = pt.coeffRef(2)*voxelSize_-sensorPose_.coeffRef(2,3);
         ptNorm = (ptDiffX*ptDiffX) + (ptDiffY*ptDiffY) + (ptDiffZ*ptDiffZ); 
         if (ptNorm  > ((maxRange_*2)*(maxRange_*2)) || 
-           (state.scanLastSeen > globalWinLen_ && 
+           (scanNum_ > globalWinLen_ && 
             state.scanLastSeen < scanNum_- globalWinLen_))
         {
             ps.push_back(pt);
@@ -301,7 +383,7 @@ void Map::update(Scan &scan, unsigned int scanNum)
             Eigen::Matrix3d B;
             B << 0, 0, 0,
                  0, exp(-map_[voxel].closestDistance*normDistOccDen_), 0,
-                 0, 0, (1 - exp(-map_[voxel].closestDistance*normDistFreeDen_));
+                 0, 0, (1 - exp(-map_[voxel].closestDistance*normDistOccDen_));
 
             Eigen::Vector3d alpha = B * hmmConfig.stateTransitionMatrix * map_[voxel].xHat;
             map_[voxel].xHat = alpha/alpha.sum();

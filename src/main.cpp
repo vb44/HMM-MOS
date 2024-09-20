@@ -1,4 +1,5 @@
 #include "ConfigParser.hpp"
+#include "DynamicRegion.hpp"
 #include "Map.hpp"
 #include "Scan.hpp"
 #include "utils.hpp"
@@ -51,7 +52,9 @@ int main(int argc, char** argv)
     // ------------------------------------------------------------------------
     Scan scan(configParser);
     Map map(configParser);
+    DynamicRegion dynamicRegion(configParser);
     boost::circular_buffer<Scan> scanHistory(configParser.localWindowSize);
+    boost::circular_buffer<Scan> delayedScans(configParser.numScansDelay+1);
 
     // ------------------------------------------------------------------------
     // HARDCODED PARAMETERS
@@ -69,12 +72,12 @@ int main(int argc, char** argv)
     // Main loop.
     // ------------------------------------------------------------------------
     bool printTimes = false;
-    for (unsigned int scanNum = configParser.startScan-1;
-                      scanNum < configParser.endScan; scanNum++)
+    for (unsigned int scanNum = 0; scanNum < numScans; scanNum++)
     {
         auto startScanTimer = std::chrono::high_resolution_clock::now();
 
         // Read the new scan.
+        scan.scanNum = scanNum;
         scan.readScan(scanFiles[scanNum], poseEstimates[scanNum]);
         auto finishReadScan = std::chrono::high_resolution_clock::now();
 
@@ -86,13 +89,24 @@ int main(int argc, char** argv)
         // Update the map.
         map.update(scan, scanNum);
         auto finishMapUpdate = std::chrono::high_resolution_clock::now();
+
+        delayedScans.push_back(scan);
         
-        if (scanNum >= (configParser.startScan + configParser.localWindowSize))
+        if (scanNum > configParser.localWindowSize)
         {
             // Determine dynamic voxels.
-            map.findDynamicVoxels(scan, scanHistory);
+            if (scanNum > configParser.numScansDelay)
+            {
+                map.findDynamicVoxels(delayedScans[0], scanHistory, dynamicRegion);
+                dynamicRegion.update(delayedScans[0], scanNum);
+            }
+            if (scanNum > numScans - configParser.numScansDelay)
+            {
+                map.findDynamicVoxels(scan, scanHistory, dynamicRegion);
+                dynamicRegion.update(scan, scanNum);
+            }
+
             auto finishFindDynamicVoxel = std::chrono::high_resolution_clock::now();
-            
             if (printTimes)
             {
                 std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(finishReadScan - startScanTimer).count() << " "
@@ -107,9 +121,18 @@ int main(int argc, char** argv)
 
         if (configParser.outputFile)
         {
-            if (configParser.scanNumsToPrint.contains(scanNum+1))
+            if (scanNum > configParser.numScansDelay && scanNum < numScans-configParser.numScansDelay)
             {
-                scan.writeFile(outFile, scanNum);
+                if (configParser.scanNumsToPrint.contains(delayedScans[0].scanNum+1))
+                {
+                    delayedScans[0].writeFile(outFile, delayedScans[0].scanNum);
+                }
+            } else
+            {
+                if (configParser.scanNumsToPrint.contains(scanNum+1))
+                {
+                    scan.writeFile(outFile, scanNum);
+                }
             }
         }
 
@@ -118,7 +141,16 @@ int main(int argc, char** argv)
         // --------------------------------------------------------------------
         if (configParser.outputLabels)
         {
-            scan.writeLabel(scanNum);
+            if (scanNum > numScans-configParser.numScansDelay)
+            {
+                scan.writeLabel(scanNum);     
+            }
+            delayedScans[0].writeLabel(delayedScans[0].scanNum);
         }
+
+        // Print the current time stamp to terminal.
+        printf("\rScan: %d", scanNum);
+        fflush(stdout);
     }
+    std::cout << std::endl;
 }

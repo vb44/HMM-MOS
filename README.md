@@ -1,5 +1,4 @@
 # Moving Object Segmentation in Point Cloud Data using Hidden Markov Models
-<h3><i>The paper is currently under review!</i></h3>
 We propose a novel learning-free approach to segment moving objects in point cloud data.
 The foundation of the approach lies in modeling each voxel using a Hidden Markov Model (HMM) and probabilistically integrating beliefs into a global map using an HMM filter.
 We extend classic image processing to accurately detect dynamic objects in point cloud data.
@@ -26,23 +25,26 @@ The following includes:
 
 ![Proposed approach](/media/processFlowchart.png) -->
 
-The method has nine configuration parameters.
+The method has ten configuration parameters.
 1. ***A*** is the HMM state transition matrix (fixed for the MOS task)
 2. ***voxelSize*** is the discretization size of the voxel map
 3. ***&sigma; (occupancy)*** is the voxel occupancy likelihood standard deviation
-4. ***&sigma; (free)*** is the voxel occupancy likelihood standard deviation.
-5. ***pMin*** is the state change detection threshold.
-6. ***m*** is the convolution kernel size.
-7. ***minOtsu*** is the minimum number of connected voxels to be identified as dynamic
-8. ***wLocal*** is the local window size used for the spatiotemporal convolution
+4. ***pMin*** is the state change detection threshold.
+5. ***m*** is the convolution kernel size.
+6. ***minOtsu*** is the minimum number of connected voxels to be identified as dynamic
+7. ***wLocal*** is the local window size used for the spatiotemporal convolution
+8. ***wDynamic*** is the dynamic window size used for retaining dynamic detections
 9. ***wGlobal*** is the global window size used for removing voxels from the map
+10. ***delay*** is the number of scans to delay the prediction by - this is useful for incorporating more information before detecting dynamic points
 
 There are also hardware settings:
 * ***rMax*** is the maximum radius of the point cloud. This is hardware-dependent and not a configuration parameter.
 * ***rMin*** is the minimum radius of the point cloud. This is hardware-dependent and not a configuration parameter.
 
 ## Benchmark Datasets
-We test our algorithm using four open-source datasets. Click the links below to see the download instructions.
+We test our algorithm using the following open-source datasets. Click the links below to see the download instructions.
+* [HeLiMOS](https://sites.google.com/view/helimos)
+    * The dataset is based on the KAIST05 sequence of the [HeliPR dataset](https://sites.google.com/view/heliprdataset) recorded by four different LiDARs. The annotated lables are used for evaluation.  We estimate the LiDAR pose using [SiMpLE](https://github.com/vb44/SiMpLE), with the estimated poses provided under the *datasetPoses* folder in this repository.
 * [Sipailou Campus](https://github.com/xieKKKi/MotionBEV)
     * The dataset consists of eight sequences using a Livox Avia mounted to a mobile robot. The sequences are available in the same format as Semantic-KITTI using *.bin* files and corresponding ground truth in *.label* files. The provided sensor pose estimates are used.
 * [Apollo Dataset](https://www.ipb.uni-bonn.de/html/projects/apollo_dataset/LiDAR-MOS.zip)
@@ -182,10 +184,8 @@ An example is shown below.
 # File paths
 scanPath: /pathToScans  # Must be .bin scan files.
 posePath: /pathToPoses  # Must be in the KITTI format.
-startScan: 1            # scan number [#]
-endScan: 1079           # scan number [#]
 minRange: 0.5           # [m]
-maxRange: 120           # [m]
+maxRange: 50            # [m]
 outputFile: true        # true/false
 scanNumsToPrint: [969, 1079] # Leave as [] if not being used. Scans indexed from 1.
 outputFileName: /outputFilePathAndName
@@ -193,14 +193,15 @@ outputLabels: true      # true/false
 outputLabelFolder: /outputLabelFolderPath
 
 # Configuration parameters
-voxelSize: 0.5          # [m]
-occupancySigma: 0.2     # [m]
-freeSigma: 0.2          # [m]
-beliefThreshold: 0.99   # probability [0-1]
-convSize: 5             # odd integer
-localWindowSize: 3      # local window size [#]
-minOtsu: 3              # min dynamic voxels in convolution
-globalWindowSize: 300   # global window size [#]
+voxelSize: 0.25                 # [m]
+occupancySigma: 0.2             # lumped uncertainty [m]
+beliefThreshold: 0.99           # probability [0-1]
+convSize: 5                     # odd integer
+localWindowSize: 3              # local window size [#]
+globalWindowSize: 300           # global window size [#]
+dynamicRegionWindowSize: 100    # global window size [#]
+numScansDelay: 0                # set to zero for online performance [#]
+minOtsu: 3                      # min dynamic voxels in spatiotemporal convolution [#]
 ```   
 
 ## Sample Results Interpretation
@@ -266,14 +267,14 @@ Config:  /pathToHmmMos/config/eval/livox-SEU-MOS.yaml
 Limit:  None
 Codalab:  None
 ********************************************************************************
-Opening data config file /home/vb/Documents/public_repositories/QCD_MOS/config/eval/livox-SEU-MOS.yaml
+Opening data config file /pathToHmmMos/config/eval/livox-SEU-MOS.yaml
 [IOU EVAL] IGNORE:  []
 [IOU EVAL] INCLUDE:  [0 1]
 labels:  3191
 predictions:  3191
 Evaluating sequences: 10% 20% 30% 40% 50% 60% 70% 80% 90% ********************************************************************************
 below can be copied straight for paper table
-iou_moving: 0.852
+iou_moving: 0.856
 ```
 5. Run the test evaluation.
 ```bash
@@ -291,14 +292,14 @@ Config:  /pathToHmmMos/config/eval/livox-SEU-MOS.yaml
 Limit:  None
 Codalab:  None
 ********************************************************************************
-Opening data config file /home/vb/Documents/public_repositories/QCD_MOS/config/eval/livox-SEU-MOS.yaml
+Opening data config file /pathToHmmMos/config/eval/livox-SEU-MOS.yaml
 [IOU EVAL] IGNORE:  []
 [IOU EVAL] INCLUDE:  [0 1]
 labels:  6201
 predictions:  6201
 Evaluating sequences: 10% 20% 30% 40% 50% 60% 70% 80% 90% ********************************************************************************
 below can be copied straight for paper table
-iou_moving: 0.862
+iou_moving: 0.870
 ```
 
 ### Apollo Evaluation
@@ -406,6 +407,7 @@ Evaluating sequences: 10% 20% 30% 40% 50% 60% 70% 80% 90% **********************
 below can be copied straight for paper table
 iou_moving: 0.905
 ```
+The same process is used for evaluating the HeLiMOS dataset.
 
 ### DOALS Evaluation
 The DOALS dataset provides 10 manually labelled scans per sequence for evaluation in *indicies.csv* files.

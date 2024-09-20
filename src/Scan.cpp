@@ -312,7 +312,7 @@ void Scan::writeFile(std::ofstream &outFile, unsigned int scanNum)
     outConstructor << scanNum+1;
     for (auto &[vox, state] : scan_)
     {
-        if (state.isDynamic)
+        if ((dynThreshold > minOtsu_ &&  state.isDynamic) || state.isDynamicInDynamicOccupancyRegion)
         {
             for (auto pt : state.pointIndicies)
             {
@@ -328,15 +328,12 @@ void Scan::writeFile(std::ofstream &outFile, unsigned int scanNum)
 void Scan::writeLabel(unsigned int scanNum)
 {
     std::set<int> dynInds;
-    if (dynThreshold > minOtsu_)
+    for (auto &[vox,state] : scan_)
     {
-        for (auto &[vox,state] : scan_)
+        if ((dynThreshold > minOtsu_ &&  state.isDynamic) || state.isDynamicInDynamicOccupancyRegion)
         {
-            if (state.isDynamic)
-            {
-                for (auto pt : state.pointIndicies)
-                    dynInds.insert(pt);
-            }
+            for (auto pt : state.pointIndicies)
+                dynInds.insert(pt);
         }
     }
 

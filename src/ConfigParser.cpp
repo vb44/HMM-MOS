@@ -20,13 +20,12 @@ int ConfigParser::parseConfig()
     {
         YAML::Node configFromYaml = YAML::LoadFile(yamlFilePath_);
         
-        startScan = configFromYaml["startScan"].as<unsigned int>();
-        endScan = configFromYaml["endScan"].as<unsigned int>();
         convSize = configFromYaml["convSize"].as<unsigned int>();
         localWindowSize = configFromYaml["localWindowSize"].as<unsigned int>();
         globalWindowSize = configFromYaml["globalWindowSize"].as<unsigned int>();
+        dynamicRegionWindowSize = configFromYaml["dynamicRegionWindowSize"].as<unsigned int>();
+        numScansDelay = configFromYaml["numScansDelay"].as<unsigned int>();
         occupancySigma = configFromYaml["occupancySigma"].as<double>();
-        freeSigma = configFromYaml["freeSigma"].as<double>();
         beliefThreshold = configFromYaml["beliefThreshold"].as<double>();
         voxelSize = configFromYaml["voxelSize"].as<double>();
         minRange = configFromYaml["minRange"].as<double>();

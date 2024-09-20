@@ -1,14 +1,14 @@
 ---
-# Test setup.
-scanPath: /pathToDatasetFolder/LiDAR-MOS/sequences/00/velodyne/
-posePath: /pathToHmmMosFolder/benchmarking/datsetPoses/Apollo/00_poses.txt
-minRange: 0.5
-maxRange: 120
+# File paths
+scanPath: /pathToDatasetFolder/KAIST05/Deskewed_LiDAR/Aeva/velodyne/
+posePath: /pathToHmmMosFolder/benchmarking/datsetPoses/HeLiMOS/aeva_poses.txt
+minRange: 1.5
+maxRange: 50
 outputFile: false
 scanNumsToPrint: []
 outputFileName:
 outputLabels: true
-outputLabelFolder: /saveFolderPath/results/labels/apollo_03/ 
+outputLabelFolder: /pathToDatasetFolder/KAIST05/Deskewed_LiDAR/Aeva/predictions/
 
 # Configuration parameters.
 voxelSize: 0.25

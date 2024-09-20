@@ -6,6 +6,7 @@
 #include <boost/circular_buffer.hpp>
 
 #include "ConfigParser.hpp"
+#include "DynamicRegion.hpp"
 #include "nanoflannUtils.hpp"
 #include "Scan.hpp"
 #include "utils.hpp"
@@ -30,7 +31,6 @@ class Map
             unsigned int numStates;
             Eigen::MatrixXd stateTransitionMatrix;
             double sigOcc;
-            double sigFree;
             double beliefThreshold;
         };
 
@@ -60,7 +60,7 @@ class Map
          * @param scan          The scan to find the dynamic voxels in.
          * @param scanHistory   A history of the previous n scans.
          */
-        void findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistory);
+        void findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistory, DynamicRegion &staticMap);
         
         /**
          * @brief Perform a median filtering operation on the scan's
@@ -112,7 +112,7 @@ class Map
 
         using pointsIterator = std::vector<Eigen::Vector3i>::const_iterator;
 
-        int convSize_, edge_, globalWinLen_, nBins_, scanNum_;
+        int convSize_, edge_, globalWinLen_, nBins_, scanNum_, numScansDelay_;
         double normDistFreeDen_, normDistOccDen_;
         double minOtsu_, maxRange_, minRange_, voxelSize_;
         Eigen::Matrix4d sensorPose_;

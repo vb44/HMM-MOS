@@ -38,12 +38,6 @@ class ConfigParser
         int parseConfig();
 
     public:
-        // The scan to start the algorithm. Zero-based indexing.
-        unsigned int startScan;
-
-        // The scan to end the algorithm.
-        unsigned int endScan;
-
         // The 3D spatial convolution size (m by m by m).
         unsigned int convSize;
 
@@ -54,15 +48,18 @@ class ConfigParser
         // The global window size used to maintain the map size and
         //  account for unertainties in the pose estimates.
         unsigned int globalWindowSize;
+        
+        // The window size to retain high-confidence dyanmic detections.
+        unsigned int dynamicRegionWindowSize;
 
+        // Number of scans to delay the dyanmic detection.
+        unsigned int numScansDelay;
+        
         // Mapping voxel size.
         double voxelSize;
 
         // Voxel occupancy likelihood standard deviation.
         double occupancySigma;
-
-        // Voxel free likelihood standard deviation.
-        double freeSigma;
 
         // Change detection threshold.
         double beliefThreshold;

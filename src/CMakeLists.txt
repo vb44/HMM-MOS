@@ -14,7 +14,8 @@ add_compile_options(-std=c++2a -O3)
 # Add an executable called hmmMOS
 add_executable(hmmMOS 
                main.cpp 
-               ConfigParser.cpp 
+               ConfigParser.cpp
+               DynamicRegion.cpp
                Map.cpp 
                Scan.cpp 
                utils.cpp)
