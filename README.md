@@ -1,11 +1,9 @@
 # Moving Object Segmentation in Point Cloud Data using Hidden Markov Models
 We propose a novel learning-free approach to segment moving objects in point cloud data.
-The foundation of the approach lies in modeling each voxel using a Hidden Markov Model (HMM) and probabilistically integrating beliefs into a global map using an HMM filter.
+The foundation of the approach lies in modelling each voxel using a Hidden Markov Model (HMM) and probabilistically integrating beliefs into a global map using an HMM filter.
 We extend classic image processing to accurately detect dynamic objects in point cloud data.
 
-**Find all demo videos and sample results [here](https://drive.google.com/drive/folders/1NucGrdpv-ofZCdMB47y2Crrrjw_VuYQo?usp=sharing), with a snapshot below!**
-
-[Click here for a demo!](https://github.com/vb44/HMM-MOS/assets/63623876/1d1dcd1c-5e1b-46f8-bdff-65d4719aaeb5)
+[Click here for a demo!](https://github.com/user-attachments/assets/8ac52292-4b8b-4f97-a4ef-c546965338b5)
 
 This is the open-source implementation of the proposed approach. 
 The code is portable and easy to understand and modify.
