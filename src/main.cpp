@@ -141,11 +141,14 @@ int main(int argc, char** argv)
         // --------------------------------------------------------------------
         if (configParser.outputLabels)
         {
-            if (scanNum > numScans-configParser.numScansDelay)
+            if (scanNum <= configParser.numScansDelay  || scanNum >= numScans-configParser.numScansDelay-1)
             {
                 scan.writeLabel(scanNum);     
             }
-            delayedScans[0].writeLabel(delayedScans[0].scanNum);
+            if (scanNum > configParser.numScansDelay)
+            {
+                delayedScans[0].writeLabel(delayedScans[0].scanNum);
+            }
         }
 
         // Print the current time stamp to terminal.
