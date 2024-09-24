@@ -277,7 +277,7 @@ The ground truth labels are downloaded from HeLiMOS.
 The *semantic-kitti-api* tools are used to evaluate the results.
 The steps are outlined below.
 
-1. Copy the label predictions from HMM-MOS to a sequences directory. The required file structure is shown below. The numbers correspond to the four LiDARS: 00 (Aeva), 01 (Avia), 02 (Ouster), 03 (Velodyne).
+1. Copy the relevant label predictions (for which there is a ground truth) from HMM-MOS to a sequences directory. The required file structure is shown below. The numbers correspond to the four LiDARS: 00 (Aeva), 01 (Avia), 02 (Ouster), 03 (Velodyne).
 ```bash
 sequences
 ├── 00
