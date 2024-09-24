@@ -257,7 +257,7 @@ outputLabelFolder: /outputLabelFolderPath
 
 # Configuration parameters
 voxelSize: 0.25                 # [m]
-occupancySigma: 0.2             # lumped uncertainty [m]
+occupancySigma: 0.25             # lumped uncertainty [m]
 beliefThreshold: 0.99           # probability [0-1]
 convSize: 5                     # odd integer
 localWindowSize: 3              # local window size [#]
