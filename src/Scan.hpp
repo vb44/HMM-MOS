@@ -79,6 +79,8 @@ class Scan
          * @return false    If the voxel is current static.
          */
         bool getDynamic(Voxel &voxel);
+
+        bool getDynamicBackEnd(Voxel &voxel);
         
         /**
          * @brief Get the high confidence dynamic state of the voxel.
@@ -91,6 +93,14 @@ class Scan
         bool getDynamicHighConfidence(Voxel &voxel);
 
         /**
+         * @brief Get the back-end (dynamic occupancy region) score.
+         * 
+         * @param voxel     The voxel to get the score of.
+         * @return double   The back-end score.
+         */
+        double getDynamicBackEndScore(Voxel &voxel);
+
+        /**
          * @brief Get the original point cloud indicies captured by the voxel.
          * 
          * @param voxel                 The voxel to get the indicies of.
@@ -99,6 +109,15 @@ class Scan
          */
         std::vector<int> getIndicies(Voxel &voxel);
         
+        /**
+         * @brief Check if the voxel has an unobserved neighbour.
+         * 
+         * @param voxel     The voxel to check if it has an unobserved neighbour.
+         * @return true     If the voxel has an unobserved neighbour.
+         * @return false    If the voxel does not have an unobserved neighbour.
+         */
+        bool hasUnobservedNeighbour(Voxel &voxel);
+ 
         /**
          * @brief Read scan from the .bin file specified in fileName and
          *        transform it by the current pose. 
@@ -150,6 +169,28 @@ class Scan
         void setDynamicHighConfidence(Voxel &voxel);
         
         /**
+         * @brief Set the voxel as being identified as dynamic by the back-end.
+         * 
+         * @param voxel The voxel to be set as being dynamic by the back-end. 
+         */
+        void setDynamicBackEnd(Voxel voxel);
+
+        /**
+         * @brief Set the dynamic back-end convolution score.
+         * 
+         * @param voxel The voxel to set the score of. 
+         * @param score The back-end convolution score.
+         */
+        void setDynamicBackEndScore(Voxel voxel, double score);
+        
+        /**
+         * @brief Set the voxel to have an unobserved neighbour.
+         * 
+         * @param voxel The voxel to be set as having an unobserved neighbour.
+         */
+        void setUnobservedNeighbour(Voxel voxel);
+        
+        /**
          * @brief Resets the scan object and updates attributes with the new
          *        scan. The scan is voxelized, a raycasting operation is
          *        perfomed to determine all observed voxels, and voxels outside
@@ -192,6 +233,8 @@ class Scan
         // comparison with the minOtsu configuration parameter. 
         double dynThreshold;
         double scanNum;
+
+    private:
         /**
          * @brief States of each voxel in the scan.
          *        Note the dynamic object segmentation is performed in the
@@ -220,8 +263,6 @@ class Scan
         };
         // Voxelized scan.         
         ankerl::unordered_dense::map<Voxel, ScanVoxelState, VoxelHash> scan_; 
-
-        private:
 
         // Configuration.
         int dim_;

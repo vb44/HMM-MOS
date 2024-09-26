@@ -13,6 +13,16 @@ DynamicRegion::~DynamicRegion()
 {
 }
 
+bool DynamicRegion::checkIfEntryExists(Voxel &voxel)
+{
+    return map_.contains(voxel);
+}
+
+bool DynamicRegion::isHighConfidence(Voxel &voxel)
+{
+    return map_[voxel].isDynamicHighConfidence;
+}
+
 void DynamicRegion::removeVoxelsOutsideWindowAndMaxRange()
 {
     std::vector<Eigen::Vector3i> ps;
@@ -49,8 +59,10 @@ void DynamicRegion::update(Scan &scan, unsigned int scanNum)
     }
 
     // Update the scan-wise dynamic detections in to the temporal static map. 
-    for (auto [voxel, voxelState] : scan.scan_)
+    // for (auto [voxel, voxelState] : scan.scan_)
+    for (int cellNum = 0; cellNum < scan.occupiedVoxels.size(); cellNum++)
     {
+        auto voxel = scan.occupiedVoxels[cellNum];
         if (!map_.contains(voxel))
         {
             DynamicVoxelState voxState;
@@ -62,10 +74,10 @@ void DynamicRegion::update(Scan &scan, unsigned int scanNum)
             // Don't revert back to static once the voxel is set to dynamic.
             if (scan.dynThreshold > minOtsu_ && !map_[voxel].isDynamic)
             {
-                map_[voxel].isDynamic = voxelState.isDynamic && !voxelState.isDynamicFromBackendConv;
+                map_[voxel].isDynamic = scan.getDynamic(voxel) && !scan.getDynamicBackEnd(voxel);
                 map_[voxel].scanLastSeen = scanNum; // The last time the voxel was dynamic.
             }
-            map_[voxel].hasUnobservedNeighbour = voxelState.hasUnobservedNeighbour;
+            map_[voxel].hasUnobservedNeighbour = scan.hasUnobservedNeighbour(voxel);
         }
     }
 

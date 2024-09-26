@@ -101,7 +101,7 @@ void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistor
                         }
                     } else
                     {
-                        scan.scan_[voxel].hasUnobservedNeighbour = true;
+                        scan.setUnobservedNeighbour({x,y,z});
                         totalScore = totalScore - 1;
                     }
                 }
@@ -242,29 +242,31 @@ void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistor
                        (map_[nPtsValid[i]].currentState != 0) && 
                        (scanNum_ - map_[nPtsValid[i]].currentStateScan < globalWinLen_))
                     {
-                        if (staticMap.map_.contains(nPtsValid[i]) && staticMap.map_[nPtsValid[i]].isDynamicHighConfidence)
+                        if (staticMap.checkIfEntryExists(nPtsValid[i]) && staticMap.isHighConfidence(nPtsValid[i]))
                         {
                             totalScore = totalScore + 1.0;
                         }
                     }
                     else
                     {
-                        scan.scan_[voxel].hasUnobservedNeighbour = true;
+                        scan.setUnobservedNeighbour(voxel);
                         totalScore = 0;
                         break;
                     }
             }
             totalScore = std::max(totalScore,0.0);
             if (!voxHasUnobservedNeighbor)
-                scan.scan_[voxel].convScoreBackEnd = totalScore;
+                scan.setDynamicBackEndScore(voxel, totalScore);
         }
     });
 
     std::vector<double> scoresBackEnd;
     for (size_t i = 0; i < scan.occupiedVoxels.size(); i++)
     {
-        if (scan.scan_[scan.occupiedVoxels[i]].convScoreBackEnd > 0)
-            scoresBackEnd.push_back(scan.scan_[scan.occupiedVoxels[i]].convScoreBackEnd);
+        if (scan.getDynamicBackEndScore(scan.occupiedVoxels[i]) > 0)
+        {
+            scoresBackEnd.push_back(scan.getDynamicBackEndScore(scan.occupiedVoxels[i]));
+        }
     }
 
     if (scoresBackEnd.size() > 0)
@@ -281,10 +283,10 @@ void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistor
             thresholdLimit2 = edges2(level2-1);
             for (unsigned int j = 0; j < scan.occupiedVoxels.size(); j++)
             {
-                if (scan.scan_[scan.occupiedVoxels[j]].convScoreBackEnd > thresholdLimit2)
+                if (scan.getDynamicBackEndScore(scan.occupiedVoxels[j]) > thresholdLimit2)
                 {
                     scan.setDynamicHighConfidence(scan.occupiedVoxels[j]);
-                    scan.scan_[scan.occupiedVoxels[j]].isDynamicFromBackendConv = true;
+                    scan.setDynamicBackEnd(scan.occupiedVoxels[j]);
                 }
             }
         }
