@@ -30,7 +30,6 @@ class Map
             unsigned int numStates;
             Eigen::MatrixXd stateTransitionMatrix;
             double sigOcc;
-            double sigFree;
             double beliefThreshold;
         };
 
@@ -113,7 +112,7 @@ class Map
         using pointsIterator = std::vector<Eigen::Vector3i>::const_iterator;
 
         int convSize_, edge_, globalWinLen_, nBins_, scanNum_;
-        double normDistFreeDen_, normDistOccDen_;
+        double normDistOccDen_;
         double minOtsu_, maxRange_, minRange_, voxelSize_;
         Eigen::Matrix4d sensorPose_;
 
@@ -127,7 +126,8 @@ class Map
         NanoflannPointsContainer<double> pcForKdTree_;
 
         // Voxelized map object.
-        ankerl::unordered_dense::map<Voxel, MapVoxelState, VoxelHash> map_; 
+        // ankerl::unordered_dense::map<Voxel, MapVoxelState, VoxelHash> map_; 
+        tsl::robin_map<Voxel, MapVoxelState, VoxelHash> map_; 
         
         /**
          * @brief Add voxels to the current map.  

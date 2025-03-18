@@ -1,19 +1,18 @@
+#include <boost/circular_buffer.hpp>
+#include <chrono>
+
 #include "ConfigParser.hpp"
 #include "Map.hpp"
 #include "Scan.hpp"
 #include "utils.hpp"
 
-#include <boost/circular_buffer.hpp>
-#include <chrono>
-
 int main(int argc, char** argv)
 {
-    // ------------------------------------------------------------------------
-    // ARGUMENT PARSING
-    // ------------------------------------------------------------------------
+    // Argument parsing
     ConfigParser configParser(argc, argv);
     int configStatus = configParser.parseConfig();
     if (configStatus) exit(1);
+    bool printTimes = false; // TODO: Shift to config?
 
     std::ofstream outFile;
     if (configParser.outputFile)
@@ -21,22 +20,16 @@ int main(int argc, char** argv)
         outFile.open(configParser.outputFileName, std::ios::out);
     }
 
-    // ------------------------------------------------------------------------
-    // LOAD THE SCAN PATHS AND THE POSE ESTIMATES
-    // ------------------------------------------------------------------------
+    // Load the scan paths and the pose estimates
     std::vector<std::string> scanFiles;
     for (auto const& dir_entry : std::filesystem::directory_iterator(configParser.scanPath))
     { 
         scanFiles.push_back(dir_entry.path());
     }
-
-    // Sort the scans in order of the file name.
     std::sort(scanFiles.begin(), scanFiles.end(), compareStrings);
-
-    // Number of scans.
     unsigned int numScans = scanFiles.size();
     
-    // Read the pose estimates in KITTI format.
+    // Read the pose estimates in KITTI format
     std::vector<std::vector<double> > poseEstimates = readPoseEstimates(configParser.posePath); 
     if (scanFiles.size() != poseEstimates.size())
     {
@@ -46,31 +39,23 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    // ------------------------------------------------------------------------
-    // INSTANTIATE CONTAINERS
-    // ------------------------------------------------------------------------
     Scan scan(configParser);
     Map map(configParser);
     boost::circular_buffer<Scan> scanHistory(configParser.localWindowSize);
 
-    // ------------------------------------------------------------------------
-    // HARDCODED PARAMETERS
-    // ------------------------------------------------------------------------
+    // Hardcoded parameters
     // These hmmConfig parameters stem from the design of the algorithm and are
     // not changed for the MOS task.
     map.hmmConfig.numStates = 3;
+    double epsilon = 0.005;
     map.hmmConfig.stateTransitionMatrix.resize(map.hmmConfig.numStates,
                                                map.hmmConfig.numStates);
-    map.hmmConfig.stateTransitionMatrix << 0.99,  0.00,  0.00,
-                                           0.005, 0.995, 0.005,
-                                           0.005, 0.005, 0.995;
+    map.hmmConfig.stateTransitionMatrix << 1.0-2*epsilon,  0.00,  0.00,
+                                           epsilon, 1.0-epsilon, epsilon,
+                                           epsilon, epsilon, 1.0-epsilon;
 
-    // ------------------------------------------------------------------------
-    // Main loop.
-    // ------------------------------------------------------------------------
-    bool printTimes = false;
-    for (unsigned int scanNum = configParser.startScan-1;
-                      scanNum < configParser.endScan; scanNum++)
+    // Estimate the per-scan dynamic detections.
+    for (unsigned int scanNum = 0; scanNum < numScans; scanNum++)
     {
         auto startScanTimer = std::chrono::high_resolution_clock::now();
 
@@ -87,9 +72,9 @@ int main(int argc, char** argv)
         map.update(scan, scanNum);
         auto finishMapUpdate = std::chrono::high_resolution_clock::now();
         
-        if (scanNum >= (configParser.startScan + configParser.localWindowSize))
+        if (scanNum > configParser.localWindowSize)
         {
-            // Determine dynamic voxels.
+            // Estimate dynamic voxels.
             map.findDynamicVoxels(scan, scanHistory);
             auto finishFindDynamicVoxel = std::chrono::high_resolution_clock::now();
             
@@ -105,6 +90,7 @@ int main(int argc, char** argv)
             scanHistory.push_back(scan);
         }
 
+        // Write results.
         if (configParser.outputFile)
         {
             if (configParser.scanNumsToPrint.contains(scanNum+1))
@@ -113,12 +99,15 @@ int main(int argc, char** argv)
             }
         }
 
-        // --------------------------------------------------------------------
-        // Write labels.
-        // --------------------------------------------------------------------
         if (configParser.outputLabels)
         {
             scan.writeLabel(scanNum);
         }
+
+        // Print the current time stamp to terminal.
+        printf("\rScan: %d", scanNum);
+        fflush(stdout);
     }
+
+    std::cout << std::endl;
 }

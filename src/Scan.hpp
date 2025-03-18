@@ -9,8 +9,9 @@
 #include <string>
 #include <vector>
 
-#include "ankerl/unordered_dense.h"
+// #include "ankerl/unordered_dense.h"
 #include "tbb/parallel_for.h"
+#include "tsl/robin_map.h"
 
 #include "ConfigParser.hpp"
 #include "nanoflannUtils.hpp"
@@ -231,7 +232,8 @@ class Scan
         boost::circular_buffer<std::vector<Eigen::Vector3d> > ptsOccupiedHistory_;
 
         // Voxelized scan.         
-        ankerl::unordered_dense::map<Voxel, ScanVoxelState, VoxelHash> scan_; 
+        // ankerl::unordered_dense::map<Voxel, ScanVoxelState, VoxelHash> scan_; 
+        tsl::robin_map<Voxel, ScanVoxelState, VoxelHash> scan_; 
 
         /**
          * @brief Add the measurements from the new scan to the

@@ -38,11 +38,6 @@ class ConfigParser
         int parseConfig();
 
     public:
-        // The scan to start the algorithm. Zero-based indexing.
-        unsigned int startScan;
-
-        // The scan to end the algorithm.
-        unsigned int endScan;
 
         // The 3D spatial convolution size (m by m by m).
         unsigned int convSize;
@@ -60,9 +55,6 @@ class ConfigParser
 
         // Voxel occupancy likelihood standard deviation.
         double occupancySigma;
-
-        // Voxel free likelihood standard deviation.
-        double freeSigma;
 
         // Change detection threshold.
         double beliefThreshold;
@@ -98,6 +90,9 @@ class ConfigParser
         std::unordered_map<int, int> scanNumsToPrint;
 
     private:
+        // The expected number of commandline arguments.
+        static constexpr int EXPECTED_ARGUMENT_COUNT = 2;
+
         // Path to the algorithm configuration file.
         std::string yamlFilePath_;
 };

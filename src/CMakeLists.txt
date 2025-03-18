@@ -8,6 +8,7 @@ find_package(TBB REQUIRED)
 find_package(nanoflann REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(unordered_dense CONFIG REQUIRED)
+find_package(tsl-robin-map REQUIRED)
 
 add_compile_options(-std=c++2a -O3)
 

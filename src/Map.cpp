@@ -10,7 +10,6 @@ Map::Map(const ConfigParser &config)
     , nBins_(100) // Hardcoded - used for histogram thresholding.
 {
     hmmConfig.beliefThreshold = config.beliefThreshold;
-    hmmConfig.sigFree = config.freeSigma;
     hmmConfig.sigOcc = config.occupancySigma;
 
     // Pre-compute the convolution edge size.
@@ -18,7 +17,6 @@ Map::Map(const ConfigParser &config)
 
     // Pre-compute the convolution computation constants.
     normDistOccDen_ = 1/(2*pow(hmmConfig.sigOcc, 2));
-    normDistFreeDen_ = 1/(2*pow(hmmConfig.sigFree, 2));
 }
 
 Map::~Map()
@@ -301,7 +299,7 @@ void Map::update(Scan &scan, unsigned int scanNum)
             Eigen::Matrix3d B;
             B << 0, 0, 0,
                  0, exp(-map_[voxel].closestDistance*normDistOccDen_), 0,
-                 0, 0, (1 - exp(-map_[voxel].closestDistance*normDistFreeDen_));
+                 0, 0, (1 - exp(-map_[voxel].closestDistance*normDistOccDen_));
 
             Eigen::Vector3d alpha = B * hmmConfig.stateTransitionMatrix * map_[voxel].xHat;
             map_[voxel].xHat = alpha/alpha.sum();
