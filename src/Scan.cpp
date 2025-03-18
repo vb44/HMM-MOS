@@ -2,7 +2,7 @@
 
 Scan::Scan(const ConfigParser &config)
     : voxelSize_(config.voxelSize)
-    , minRange_(config.minRange)
+    , minRangeSqr_(config.minRange*config.minRange)
     , maxRange_(config.maxRange)
     , minOtsu_(config.minOtsu)
     , outputLabelFolder_(config.outputLabelFolder)
@@ -10,12 +10,8 @@ Scan::Scan(const ConfigParser &config)
     // Compute the dimension of the convolution kernel.
     dim_ = config.maxRange/config.voxelSize * 2 + 1;
 
+    maxRangeSqr_ = maxRange_ * maxRange_;
     ptsOccupiedHistory_.resize(config.localWindowSize);
-}
-
-Scan::~Scan()
-{
-
 }
 
 void Scan::addPointsWithIndex()
@@ -25,15 +21,16 @@ void Scan::addPointsWithIndex()
     {
         double ptNormSquared = 0;
         double ptDiff = 0;
-        for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++)
         {
-            ptDiff = point(i)-sensorPose(i,3);
+            ptDiff = point(j)-sensorPose(j,3);
             ptNormSquared += ptDiff * ptDiff; 
         }
-        if (ptNormSquared > minRange_*minRange_)
+        if (ptNormSquared > minRangeSqr_)
         {
             auto voxel = Voxel((point / voxelSize_).template cast<int>());
-            if (scan_.contains(voxel)) {
+            if (scan_.contains(voxel))
+            {
                 scan_[voxel].pointIndicies.push_back(i);
             } else
             {
@@ -41,9 +38,7 @@ void Scan::addPointsWithIndex()
                 v.pointIndicies.push_back(i);
                 scan_.insert({voxel, v});
                 occupiedVoxels.push_back(voxel);
-                ptsOccupied.push_back({voxel(0)*voxelSize_,
-                                       voxel(1)*voxelSize_,
-                                       voxel(2)*voxelSize_});
+                ptsOccupied.push_back({voxel(0)*voxelSize_, voxel(1)*voxelSize_, voxel(2)*voxelSize_});
             }
         }
         i++;
@@ -51,12 +46,10 @@ void Scan::addPointsWithIndex()
 
     // Save the previous and current scan points for the EDF construction.
     ptsOccupiedOverWindow = ptsOccupied;
-    unsigned int j = ptsOccupiedHistory_.size()-1;
+    unsigned int j = ptsOccupiedHistory_.size() - 1;
+    for (auto pt : ptsOccupiedHistory_[j])
     {
-        for (auto pt : ptsOccupiedHistory_[j])
-        {
-            ptsOccupiedOverWindow.push_back(pt);
-        }
+        ptsOccupiedOverWindow.push_back(pt);
     }
     ptsOccupiedHistory_.push_back(ptsOccupied);
 }
@@ -68,15 +61,14 @@ bool Scan::checkIfEntryExists(const Voxel &voxel)
 
 void Scan::findObservedVoxels()
 {    
-    std::vector<std::vector<std::vector<bool> > > obs(
-                            dim_, std::vector<std::vector<bool> >(
-                            dim_, std::vector<bool>(dim_)));
+    std::vector<std::vector<std::vector<bool> > > obs(dim_, std::vector<std::vector<bool> >(
+                                                      dim_, std::vector<bool>(dim_)));
     std::vector<std::vector<Eigen::Vector3i> > all(occupiedVoxels.size());
     
     // Sensor position.
-    int sX = std::floor(sensorPose(0,3)/voxelSize_);
-    int sY = std::floor(sensorPose(1,3)/voxelSize_);
-    int sZ = std::floor(sensorPose(2,3)/voxelSize_);
+    int sX = std::floor(sensorPose(0, 3) / voxelSize_);
+    int sY = std::floor(sensorPose(1, 3) / voxelSize_);
+    int sZ = std::floor(sensorPose(2, 3) / voxelSize_);
 
     // Find the free voxels traversed for each occupied voxel using the
     // Bresenham line algorihtm.
@@ -84,17 +76,15 @@ void Scan::findObservedVoxels()
     tbb::blocked_range<int>(0,occupiedVoxels.size()),
     [&](tbb::blocked_range<int> r)
     {
-        for (unsigned int occupiedVoxNum = r.begin();
-             occupiedVoxNum < r.end();
-             occupiedVoxNum++)
+        for (unsigned int occupiedVoxNum = r.begin(); occupiedVoxNum < r.end(); occupiedVoxNum++)
         { 
             // To support multi-threading.
             std::vector<Eigen::Vector3i> ptsObs;
 
             // Extract the raycast start and end points.
-            int x0 = std::floor(sensorPose(0,3)/voxelSize_);
-            int y0 = std::floor(sensorPose(1,3)/voxelSize_);
-            int z0 = std::floor(sensorPose(2,3)/voxelSize_);
+            int x0 = sX;
+            int y0 = sY;
+            int z0 = sZ;
             int x1 = occupiedVoxels[occupiedVoxNum](0);
             int y1 = occupiedVoxels[occupiedVoxNum](1);
             int z1 = occupiedVoxels[occupiedVoxNum](2);
@@ -106,24 +96,24 @@ void Scan::findObservedVoxels()
             int dx = abs(x1 - x0);
             int dy = abs(y1 - y0); 
             int dz = abs(z1 - z0);
-            int dm = std::max(std::max(dx,dy),dz);
-            x1 = y1 = z1 = dm/2;
+            int dm = std::max(std::max(dx,dy), dz);
+            x1 = y1 = z1 = dm / 2;
 
             double ptNorm;
             double ptDiffX, ptDiffY, ptDiffZ;
             bool occFlag = false;
             for(int i = dm; i > -1; i--) 
             {
-                ptDiffX = (sX-x0)*voxelSize_;
-                ptDiffY = (sY-y0)*voxelSize_;
-                ptDiffZ = (sZ-z0)*voxelSize_;
-                ptNorm = (ptDiffX*ptDiffX) +
-                         (ptDiffY*ptDiffY) +
-                         (ptDiffZ*ptDiffZ); 
+                ptDiffX = (sX - x0) * voxelSize_;
+                ptDiffY = (sY - y0) * voxelSize_;
+                ptDiffZ = (sZ - z0) * voxelSize_;
+                ptNorm = (ptDiffX * ptDiffX) +
+                         (ptDiffY * ptDiffY) +
+                         (ptDiffZ * ptDiffZ); 
 
-                if (ptNorm <= (maxRange_*maxRange_))
+                if (ptNorm <= (maxRangeSqr_))
                 {
-                    ptsObs.push_back({x0,y0,z0});
+                    ptsObs.push_back({x0, y0, z0});
                 }
                 
                 // Update the next voxel to be traversed.
@@ -137,14 +127,14 @@ void Scan::findObservedVoxels()
 
     // Save the unique observed voxels from the repeated values in all.
     int i, j, k;
-    int offset = maxRange_/voxelSize_;
+    int offset = maxRange_ / voxelSize_;
     for (const auto &x : all)
     {
         for (const auto &y : x)
         {
-            i = y(0)+offset-sX;
-            j = y(1)+offset-sY;
-            k = y(2)+offset-sZ;
+            i = y(0) + offset - sX;
+            j = y(1) + offset - sY;
+            k = y(2) + offset - sZ;
             if (!obs[i][j][k])
             {
                 obs[i][j][k] = true;
@@ -263,13 +253,13 @@ void Scan::removeVoxelsOutsideMaxRange()
     std::vector<Eigen::Vector3i> voxToRemove;
     for (const auto &[pt, state] : scan_)
     {
-        ptDiffX = pt.coeffRef(0)*voxelSize_-sensorPose.coeffRef(0,3);
-        ptDiffY = pt.coeffRef(1)*voxelSize_-sensorPose.coeffRef(1,3);
-        ptDiffZ = pt.coeffRef(2)*voxelSize_-sensorPose.coeffRef(2,3);
-        ptNormSquared = (ptDiffX*ptDiffX) +
-                        (ptDiffY*ptDiffY) + 
-                        (ptDiffZ*ptDiffZ);
-        if (ptNormSquared  > (maxRange_*maxRange_))
+        ptDiffX = pt.coeffRef(0) * voxelSize_ - sensorPose.coeffRef(0,3);
+        ptDiffY = pt.coeffRef(1) * voxelSize_ - sensorPose.coeffRef(1,3);
+        ptDiffZ = pt.coeffRef(2) * voxelSize_ - sensorPose.coeffRef(2,3);
+        ptNormSquared = (ptDiffX * ptDiffX) +
+                        (ptDiffY * ptDiffY) + 
+                        (ptDiffZ * ptDiffZ);
+        if (ptNormSquared  > (maxRangeSqr_))
         {
             voxToRemove.push_back(pt);
         }

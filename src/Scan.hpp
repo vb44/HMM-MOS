@@ -38,7 +38,7 @@ class Scan
          * @brief Destroy the Scan object.
          * 
          */
-        ~Scan();
+        ~Scan() = default;
         
         /**
          * @brief Check if a voxel exists in the current scan. 
@@ -219,7 +219,7 @@ class Scan
 
         // Configuration.
         int dim_;
-        double voxelSize_, minRange_, maxRange_, minOtsu_;
+        double voxelSize_, minRangeSqr_, maxRange_, maxRangeSqr_, minOtsu_;
         std::string outputLabelFolder_;
         
         // Original scan Cartesian points read from the file.

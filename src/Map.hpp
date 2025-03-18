@@ -44,7 +44,7 @@ class Map
          * @brief Destroy the Map object.
          * 
          */
-        ~Map();
+        ~Map() = default;
 
         /**
          * @brief Container to store and set the HMM config parameters.
@@ -113,7 +113,7 @@ class Map
 
         int convSize_, edge_, globalWinLen_, nBins_, scanNum_;
         double normDistOccDen_;
-        double minOtsu_, maxRange_, minRange_, voxelSize_;
+        double minOtsu_, maxRangeSqr_, voxelSize_;
         Eigen::Matrix4d sensorPose_;
 
         // The previous scans dynamic voxels used to perserve dynamic voxels.

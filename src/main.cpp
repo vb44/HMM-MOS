@@ -6,11 +6,18 @@
 #include "Scan.hpp"
 #include "utils.hpp"
 
+static constexpr int EXPECTED_ARGUMENT_COUNT = 2;
+
 int main(int argc, char** argv)
 {
     // Argument parsing
-    ConfigParser configParser(argc, argv);
-    int configStatus = configParser.parseConfig();
+    if (argc != EXPECTED_ARGUMENT_COUNT)
+    {
+        std::cerr << "Usage: ./hmmMOS config_file.yaml" << std::endl;
+        exit(EXIT_FAILURE);
+    }    
+    ConfigParser configParser;
+    int configStatus = configParser.parseConfig(argv[1]);
     if (configStatus) exit(1);
     bool printTimes = false; // TODO: Shift to config?
 
@@ -26,11 +33,11 @@ int main(int argc, char** argv)
     { 
         scanFiles.push_back(dir_entry.path());
     }
-    std::sort(scanFiles.begin(), scanFiles.end(), compareStrings);
+    std::sort(scanFiles.begin(), scanFiles.end(), utils::compareStrings);
     unsigned int numScans = scanFiles.size();
     
     // Read the pose estimates in KITTI format
-    std::vector<std::vector<double> > poseEstimates = readPoseEstimates(configParser.posePath); 
+    std::vector<std::vector<double> > poseEstimates = utils::readPoseEstimates(configParser.posePath); 
     if (scanFiles.size() != poseEstimates.size())
     {
         std::cerr << "The number of scans (" << scanFiles.size() 
