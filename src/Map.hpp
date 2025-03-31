@@ -6,6 +6,7 @@
 #include <boost/circular_buffer.hpp>
 
 #include "ConfigParser.hpp"
+#include "DynamicRegion.hpp"
 #include "nanoflannUtils.hpp"
 #include "Scan.hpp"
 #include "utils.hpp"
@@ -59,7 +60,7 @@ class Map
          * @param scan          The scan to find the dynamic voxels in.
          * @param scanHistory   A history of the previous n scans.
          */
-        void findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistory);
+        void findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistory, DynamicRegion &staticMap);
         
         /**
          * @brief Perform a median filtering operation on the scan's

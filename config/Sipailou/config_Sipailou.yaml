@@ -2,8 +2,6 @@
 # Test setup.
 scanPath: /pathToDatasetFolder/sipailou-livox-kitti/sequences/00/velodyne/
 posePath: /pathToDatasetFolder/sipailou-livox-kitti/sequences/00/poses.txt
-startScan: 1
-endScan: 2648
 minRange: 3
 maxRange: 50
 outputFile: false
@@ -13,11 +11,12 @@ outputLabels: true
 outputLabelFolder: /saveFolderPath/results/labels/sipailou_00/
 
 # Configuration parameters.
-voxelSize: 0.2
-occupancySigma: 0.2
-freeSigma: 0.2
+voxelSize: 0.25
+occupancySigma: 0.25
 beliefThreshold: 0.99
 convSize: 5
 localWindowSize: 3
 globalWindowSize: 300
+dynamicRegionWindowSize: 100
+numScansDelay: 0
 minOtsu: 3

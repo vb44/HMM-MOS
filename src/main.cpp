@@ -2,6 +2,7 @@
 #include <chrono>
 
 #include "ConfigParser.hpp"
+#include "DynamicRegion.hpp"
 #include "Map.hpp"
 #include "Scan.hpp"
 #include "utils.hpp"
@@ -48,7 +49,9 @@ int main(int argc, char** argv)
 
     Scan scan(configParser);
     Map map(configParser);
+    DynamicRegion dynamicRegion(configParser);
     boost::circular_buffer<Scan> scanHistory(configParser.localWindowSize);
+    boost::circular_buffer<Scan> delayedScans(configParser.numScansDelay+1);
 
     // Hardcoded parameters
     // These hmmConfig parameters stem from the design of the algorithm and are
@@ -67,6 +70,7 @@ int main(int argc, char** argv)
         auto startScanTimer = std::chrono::high_resolution_clock::now();
 
         // Read the new scan.
+        scan.scanNum = scanNum;
         scan.readScan(scanFiles[scanNum], poseEstimates[scanNum]);
         auto finishReadScan = std::chrono::high_resolution_clock::now();
 
@@ -84,7 +88,6 @@ int main(int argc, char** argv)
             // Estimate dynamic voxels.
             map.findDynamicVoxels(scan, scanHistory);
             auto finishFindDynamicVoxel = std::chrono::high_resolution_clock::now();
-            
             if (printTimes)
             {
                 std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(finishReadScan - startScanTimer).count() << " "
@@ -100,16 +103,36 @@ int main(int argc, char** argv)
         // Write results.
         if (configParser.outputFile)
         {
-            if (configParser.scanNumsToPrint.contains(scanNum+1))
+            if (scanNum > configParser.numScansDelay && scanNum < numScans-configParser.numScansDelay)
             {
-                scan.writeFile(outFile, scanNum);
+                if (configParser.scanNumsToPrint.contains(delayedScans[0].scanNum+1))
+                {
+                    delayedScans[0].writeFile(outFile, delayedScans[0].scanNum);
+                }
+            } else
+            {
+                if (configParser.scanNumsToPrint.contains(scanNum+1))
+                {
+                    scan.writeFile(outFile, scanNum);
+                }
             }
         }
 
         if (configParser.outputLabels)
         {
-            scan.writeLabel(scanNum);
+            if (scanNum <= configParser.numScansDelay  || scanNum >= numScans-configParser.numScansDelay-1)
+            {
+                scan.writeLabel(scanNum);     
+            }
+            if (scanNum > configParser.numScansDelay)
+            {
+                delayedScans[0].writeLabel(delayedScans[0].scanNum);
+            }
         }
+
+        // Print the current time stamp to terminal.
+        printf("\rScan: %d", scanNum);
+        fflush(stdout);
 
         // Print the current time stamp to terminal.
         printf("\rScan: %d", scanNum);

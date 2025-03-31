@@ -1,0 +1,22 @@
+---
+# Test setup.
+scanPath: /pathToDatasetFolder/LiDAR-MOS/sequences/00/velodyne/
+posePath: /pathToHmmMosFolder/benchmarking/datsetPoses/Apollo/00_poses.txt
+minRange: 0.5
+maxRange: 120
+outputFile: false
+scanNumsToPrint: []
+outputFileName:
+outputLabels: true
+outputLabelFolder: /saveFolderPath/results/labels/apollo_03/ 
+
+# Configuration parameters.
+voxelSize: 0.25
+occupancySigma: 0.25
+beliefThreshold: 0.99
+convSize: 5
+localWindowSize: 3
+globalWindowSize: 300
+dynamicRegionWindowSize: 100
+numScansDelay: 0
+minOtsu: 3

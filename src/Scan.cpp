@@ -159,6 +159,26 @@ bool Scan::getDynamic(Voxel &voxel)
     return scan_[voxel].isDynamic;
 }
 
+bool Scan::getDynamicBackEnd(Voxel &voxel)
+{
+    return scan_[voxel].isDynamicFromBackendConv;
+}
+
+double Scan::getDynamicBackEndScore(Voxel &voxel)
+{
+    return scan_[voxel].convScoreBackEnd;
+}
+
+void Scan::setDynamicBackEnd(Voxel voxel)
+{
+    scan_[voxel].isDynamicFromBackendConv = true;
+}
+
+void Scan::setDynamicBackEndScore(Voxel voxel, double score)
+{
+    scan_[voxel].convScoreBackEnd = score; 
+}
+
 bool Scan::getDynamicHighConfidence(Voxel &voxel)
 {
     return scan_[voxel].isDynamic && scan_[voxel].isDynamicHighConfidence;
@@ -173,6 +193,11 @@ bool Scan::getDynamicHighConfidence(Voxel &voxel)
     }
     return inds;
  }
+
+ bool Scan::hasUnobservedNeighbour(Voxel &voxel)
+{
+    return scan_[voxel].hasUnobservedNeighbour;
+}
 
 void Scan::setConvScore(Voxel voxel, double convScore)
 {
@@ -193,6 +218,11 @@ void Scan::setDynamicHighConfidence(Voxel &voxel)
 {
     scan_[voxel].isDynamic = true;
     scan_[voxel].isDynamicHighConfidence = true;
+}
+
+void Scan::setUnobservedNeighbour(Voxel voxel)
+{
+    scan_[voxel].hasUnobservedNeighbour = true;
 }
 
  void Scan::readScan(const std::string &fileName, const std::vector<double> &pose)
@@ -318,15 +348,12 @@ void Scan::writeFile(std::ofstream &outFile, unsigned int scanNum)
 void Scan::writeLabel(unsigned int scanNum)
 {
     std::set<int> dynInds;
-    if (dynThreshold > minOtsu_)
+    for (auto &[vox,state] : scan_)
     {
-        for (auto &[vox,state] : scan_)
+        if ((dynThreshold > minOtsu_ &&  state.isDynamic) || state.isDynamicInDynamicOccupancyRegion)
         {
-            if (state.isDynamic)
-            {
-                for (auto pt : state.pointIndicies)
-                    dynInds.insert(pt);
-            }
+            for (auto pt : state.pointIndicies)
+                dynInds.insert(pt);
         }
     }
 
