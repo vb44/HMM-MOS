@@ -1,0 +1,20 @@
+---
+# Test setup.
+scanPath: pathToDatasetFolder/sipailou-livox-kitti/sequences/00/velodyne/
+posePath: pathToDatasetFolder/sipailou-livox-kitti/sequences/00/poses.txt
+minRange: 3
+maxRange: 50
+outputFile: false
+scanNumsToPrint: []
+outputFileName:
+outputLabels: true
+outputLabelFolder: pathToDatasetFolder/sipailou-livox-kitti/sequences/00/predictions/
+
+# Configuration parameters.
+voxelSize: 0.25
+occupancySigma: 0.25
+beliefThreshold: 0.99
+convSize: 5
+localWindowSize: 5
+globalWindowSize: 300
+minOtsu: 3

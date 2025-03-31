@@ -1,0 +1,20 @@
+---
+# Test setup.
+scanPath: /pathToDatasetFolder/LiDAR-MOS/sequences/03/velodyne/
+posePath: /pathToHmmMosFolder/benchmarking/datasetPoses/03_poses.txt
+minRange: 1.5
+maxRange: 120
+outputFile: false
+scanNumsToPrint: []
+outputFileName:
+outputLabels: true
+outputLabelFolder: /pathToDatasetFolder/LiDAR-MOS/sequences/03/predictions/
+
+# Configuration parameters.
+voxelSize: 0.25
+occupancySigma: 0.25
+beliefThreshold: 0.99
+convSize: 5
+localWindowSize: 5
+globalWindowSize: 300
+minOtsu: 3

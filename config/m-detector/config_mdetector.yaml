@@ -1,0 +1,20 @@
+---
+# Test setup.
+scanPath: pathToDatasetFolder/m-detector/avia/bin/sequences/0043/velodyne/
+posePath: pathToDatasetFolder/m-detector/avia/bin/sequences/0043/poses
+minRange: 0
+maxRange: 120
+outputFile: false
+scanNumsToPrint: []
+outputFileName:
+outputLabels: true
+outputLabelFolder: pathToDatasetFolder/avia/bin/sequences/0043/predictions/
+
+# Configuration parameters.
+voxelSize: 0.25
+occupancySigma: 0.25
+beliefThreshold: 0.99
+convSize: 5
+localWindowSize: 5
+globalWindowSize: 300
+minOtsu: 3

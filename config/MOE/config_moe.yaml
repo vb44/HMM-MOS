@@ -1,0 +1,20 @@
+---
+# File paths
+scanPath: pathToDatasetFolder/MOE/sequences/00/velodyne/"
+posePath: pathToDatasetFolder/MOE/sequences/00/gt_poses.txt
+minRange: 0
+maxRange: 120
+outputFile: false
+scanNumsToPrint: []
+outputFileName:
+outputLabels: true
+outputLabelFolder: pathToDatasetFolder/MOE/sequences/00/predictions/ 
+
+# Configuration parameters.
+voxelSize: 0.25
+occupancySigma: 0.25
+beliefThreshold: 0.99
+convSize: 5
+localWindowSize: 5
+globalWindowSize: 300
+minOtsu: 3
