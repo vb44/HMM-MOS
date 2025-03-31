@@ -302,7 +302,7 @@ void Scan::writeFile(std::ofstream &outFile, unsigned int scanNum)
     outConstructor << scanNum+1;
     for (auto &[vox, state] : scan_)
     {
-        if (state.isDynamic)
+        if (state.isDynamic && dynThreshold > minOtsu_)
         {
             for (auto pt : state.pointIndicies)
             {

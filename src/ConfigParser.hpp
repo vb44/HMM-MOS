@@ -74,7 +74,7 @@ struct ConfigParser
             voxelSize = configFromYaml["voxelSize"].as<double>();
             minRange = configFromYaml["minRange"].as<double>();
             maxRange = configFromYaml["maxRange"].as<double>();
-            minOtsu = configFromYaml["minOtsu"].as<double>();
+            minOtsu = std::log(configFromYaml["minOtsu"].as<double>());
             outputFile = configFromYaml["outputFile"].as<bool>();
             outputLabels = configFromYaml["outputLabels"].as<bool>();
             scanPath = configFromYaml["scanPath"].as<std::string>();
