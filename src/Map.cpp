@@ -136,24 +136,22 @@ void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistor
         scan.dynThreshold = thresholdLimit;
         for (unsigned int j = 0; j < scan.occupiedVoxels.size(); j++)
         {
-            // if (scan.getConvScoreOverWindow(scan.occupiedVoxels[j]) > thresholdLimit)
-            if (scan.getConvScoreOverWindow(scan.occupiedVoxels[j]) > 0 &&
-                std::log(scan.getConvScoreOverWindow(scan.occupiedVoxels[j])) > thresholdLimit)
+            if (scan.getConvScoreOverWindow(scan.occupiedVoxels[j]) > thresholdLimit)
             {
                 scan.setDynamicHighConfidence(scan.occupiedVoxels[j]);
             }
         }
     }
 
-    // // Set the previously dynamic scans to be dynamic if they exist in the
-    // // current scan and still have some confidence of being dynamic.
-    // for (auto x: prevScanDynamicVoxels_)
-    // {
-    //     if (scan.checkIfEntryExists(x) && scan.getConvScoreOverWindow(x) > minOtsu_)
-    //     {
-    //         scan.setDynamicHighConfidence(x);
-    //     }
-    // }
+    // Set the previously dynamic scans to be dynamic if they exist in the
+    // current scan and still have some confidence of being dynamic.
+    for (auto x: prevScanDynamicVoxels_)
+    {
+        if (scan.checkIfEntryExists(x) && scan.getConvScoreOverWindow(x) > minOtsu_)
+        {
+            scan.setDynamicHighConfidence(x);
+        }
+    }
 
     // Region growing.
     // Perform a nearest neighbour dilation.
@@ -187,15 +185,15 @@ void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistor
         }
     }
 
-    // // Save the high confidence dynamic detections to be used for the next scan.
-    // prevScanDynamicVoxels_.clear();
-    // for (auto x : scan.occupiedVoxels)
-    // {
-    //     if (scan.getDynamicHighConfidence(x))
-    //     {
-    //         prevScanDynamicVoxels_.push_back(x);
-    //     } 
-    // }    
+    // Save the high confidence dynamic detections to be used for the next scan.
+    prevScanDynamicVoxels_.clear();
+    for (auto x : scan.occupiedVoxels)
+    {
+        if (scan.getDynamicHighConfidence(x))
+        {
+            prevScanDynamicVoxels_.push_back(x);
+        } 
+    }    
 }
 
 void Map::findMedianValue(Scan &scan)

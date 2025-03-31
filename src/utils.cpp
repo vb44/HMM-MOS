@@ -18,13 +18,6 @@ namespace utils
     void findHistogramCounts(unsigned int nBins, std::vector<double> &vals,
                              Eigen::VectorXd &binCounts, Eigen::VectorXd &edges)
     {
-        for (int i = 0; i < vals.size(); i++)
-        {
-            if (vals[i] > 0)
-            {
-                vals[i] = std::log(vals[i]);
-            }
-        }
         double maxVal = *std::max_element(&vals[0], &vals[0]+vals.size());
         double minVal = *std::min_element(&vals[0], &vals[0]+vals.size());
         double binSize = (maxVal - minVal)/nBins;
@@ -54,6 +47,7 @@ namespace utils
     {
         int n  = a.size();
         std::sort(a.begin(), a.end());
+
         if (n  % 2 != 0)
         {
             return a[n/2];
