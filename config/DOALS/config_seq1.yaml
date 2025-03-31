@@ -1,7 +1,7 @@
 ---
 # File paths
 scanPath: /pathToDatasetFolder/hauptgebaeude/sequence_1/binFiles/
-posePath: /pathToHmmMosFolder/benchmarking/datsetPoses/DOALS/hauptgebaeude_seq1.txt
+posePath: /pathToDatasetFolder/hauptgebaeude/sequence_1/poses.txt
 minRange: 0.5
 maxRange: 20
 outputFile: true
@@ -11,12 +11,10 @@ outputLabels: false
 outputLabelFolder: 
 
 # Configuration parameters.
-voxelSize: 0.2
-occupancySigma: 0.2
+voxelSize: 0.25
+occupancySigma: 0.25
 beliefThreshold: 0.99
 convSize: 5
-localWindowSize: 3
+localWindowSize: 5
 globalWindowSize: 300
-dynamicRegionWindowSize: 100
-numScansDelay: 0
 minOtsu: 3

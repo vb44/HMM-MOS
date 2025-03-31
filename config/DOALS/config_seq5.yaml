@@ -1,22 +1,20 @@
 ---
 # File paths
 scanPath: /pathToDatasetFolder/shopville/sequence_1/binFiles/
-posePath: /pathToHmmMosFolder/benchmarking/datsetPoses/DOALS/shopville_seq1.txt
+posePath: //pathToDatasetFolder/shopville/sequence_1/binFiles/poses.txt
 minRange: 0.5
-maxRange: 20
+maxRange: 120
 outputFile: true
 scanNumsToPrint: [79, 179, 279, 379, 479, 579, 679, 779, 879, 979]
 outputFileName: /saveFolderPath/results/test_seq5
 outputLabels: false
-outputLabelFolder: 
+outputLabelFolder:
 
 # Configuration parameters.
-voxelSize: 0.2
-occupancySigma: 0.2
+voxelSize: 0.25
+occupancySigma: 0.25
 beliefThreshold: 0.99
 convSize: 5
-localWindowSize: 3
+localWindowSize: 5
 globalWindowSize: 300
-dynamicRegionWindowSize: 100
-numScansDelay: 0
 minOtsu: 3

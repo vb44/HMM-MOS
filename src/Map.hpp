@@ -45,7 +45,7 @@ class Map
          * @brief Destroy the Map object.
          * 
          */
-        ~Map();
+        ~Map() = default;
 
         /**
          * @brief Container to store and set the HMM config parameters.
@@ -112,9 +112,9 @@ class Map
 
         using pointsIterator = std::vector<Eigen::Vector3i>::const_iterator;
 
-        int convSize_, edge_, globalWinLen_, nBins_, scanNum_, numScansDelay_;
-        double normDistFreeDen_, normDistOccDen_;
-        double minOtsu_, maxRange_, minRange_, voxelSize_;
+        int convSize_, edge_, globalWinLen_, nBins_, scanNum_;
+        double normDistOccDen_;
+        double minOtsu_, maxRangeSqr_, voxelSize_;
         Eigen::Matrix4d sensorPose_;
 
         // The previous scans dynamic voxels used to perserve dynamic voxels.

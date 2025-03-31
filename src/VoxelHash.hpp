@@ -9,7 +9,7 @@ using Voxel = Eigen::Vector3i;
 
 /**
  * @brief Voxel hash for uniquely storing entries described by (x,y,z) integers.
- *        Voxel hash map implementation from KISS-ICP. 
+ *        Voxel hash map implementation from KISS-ICP (https://github.com/PRBonn/kiss-icp). 
  */
 struct VoxelHash
 {

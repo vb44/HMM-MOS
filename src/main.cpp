@@ -1,20 +1,26 @@
+#include <boost/circular_buffer.hpp>
+#include <chrono>
+
 #include "ConfigParser.hpp"
 #include "DynamicRegion.hpp"
 #include "Map.hpp"
 #include "Scan.hpp"
 #include "utils.hpp"
 
-#include <boost/circular_buffer.hpp>
-#include <chrono>
+static constexpr int EXPECTED_ARGUMENT_COUNT = 2;
 
 int main(int argc, char** argv)
 {
-    // ------------------------------------------------------------------------
-    // ARGUMENT PARSING
-    // ------------------------------------------------------------------------
-    ConfigParser configParser(argc, argv);
-    int configStatus = configParser.parseConfig();
+    // Argument parsing
+    if (argc != EXPECTED_ARGUMENT_COUNT)
+    {
+        std::cerr << "Usage: ./hmmMOS config_file.yaml" << std::endl;
+        exit(EXIT_FAILURE);
+    }    
+    ConfigParser configParser;
+    int configStatus = configParser.parseConfig(argv[1]);
     if (configStatus) exit(1);
+    bool printTimes = false; // TODO: Shift to config?
 
     std::ofstream outFile;
     if (configParser.outputFile)
@@ -22,23 +28,17 @@ int main(int argc, char** argv)
         outFile.open(configParser.outputFileName, std::ios::out);
     }
 
-    // ------------------------------------------------------------------------
-    // LOAD THE SCAN PATHS AND THE POSE ESTIMATES
-    // ------------------------------------------------------------------------
+    // Load the scan paths and the pose estimates
     std::vector<std::string> scanFiles;
     for (auto const& dir_entry : std::filesystem::directory_iterator(configParser.scanPath))
     { 
         scanFiles.push_back(dir_entry.path());
     }
-
-    // Sort the scans in order of the file name.
-    std::sort(scanFiles.begin(), scanFiles.end(), compareStrings);
-
-    // Number of scans.
+    std::sort(scanFiles.begin(), scanFiles.end(), utils::compareStrings);
     unsigned int numScans = scanFiles.size();
     
-    // Read the pose estimates in KITTI format.
-    std::vector<std::vector<double> > poseEstimates = readPoseEstimates(configParser.posePath); 
+    // Read the pose estimates in KITTI format
+    std::vector<std::vector<double> > poseEstimates = utils::readPoseEstimates(configParser.posePath); 
     if (scanFiles.size() != poseEstimates.size())
     {
         std::cerr << "The number of scans (" << scanFiles.size() 
@@ -47,31 +47,24 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    // ------------------------------------------------------------------------
-    // INSTANTIATE CONTAINERS
-    // ------------------------------------------------------------------------
     Scan scan(configParser);
     Map map(configParser);
     DynamicRegion dynamicRegion(configParser);
     boost::circular_buffer<Scan> scanHistory(configParser.localWindowSize);
     boost::circular_buffer<Scan> delayedScans(configParser.numScansDelay+1);
 
-    // ------------------------------------------------------------------------
-    // HARDCODED PARAMETERS
-    // ------------------------------------------------------------------------
+    // Hardcoded parameters
     // These hmmConfig parameters stem from the design of the algorithm and are
     // not changed for the MOS task.
+    double epsilon = 0.005;
     map.hmmConfig.numStates = 3;
     map.hmmConfig.stateTransitionMatrix.resize(map.hmmConfig.numStates,
                                                map.hmmConfig.numStates);
-    map.hmmConfig.stateTransitionMatrix << 0.99,  0.00,  0.00,
-                                           0.005, 0.995, 0.005,
-                                           0.005, 0.005, 0.995;
+    map.hmmConfig.stateTransitionMatrix << 1.0-2*epsilon,  0.00,  0.00,
+                                           epsilon, 1.0-epsilon, epsilon,
+                                           epsilon, epsilon, 1.0-epsilon;
 
-    // ------------------------------------------------------------------------
-    // Main loop.
-    // ------------------------------------------------------------------------
-    bool printTimes = false;
+    // Estimate the per-scan dynamic detections.
     for (unsigned int scanNum = 0; scanNum < numScans; scanNum++)
     {
         auto startScanTimer = std::chrono::high_resolution_clock::now();
@@ -89,23 +82,11 @@ int main(int argc, char** argv)
         // Update the map.
         map.update(scan, scanNum);
         auto finishMapUpdate = std::chrono::high_resolution_clock::now();
-
-        delayedScans.push_back(scan);
         
         if (scanNum > configParser.localWindowSize)
         {
-            // Determine dynamic voxels.
-            if (scanNum > configParser.numScansDelay)
-            {
-                map.findDynamicVoxels(delayedScans[0], scanHistory, dynamicRegion);
-                dynamicRegion.update(delayedScans[0], scanNum);
-            }
-            if (scanNum > numScans - configParser.numScansDelay)
-            {
-                map.findDynamicVoxels(scan, scanHistory, dynamicRegion);
-                dynamicRegion.update(scan, scanNum);
-            }
-
+            // Estimate dynamic voxels.
+            map.findDynamicVoxels(scan, scanHistory);
             auto finishFindDynamicVoxel = std::chrono::high_resolution_clock::now();
             if (printTimes)
             {
@@ -119,6 +100,7 @@ int main(int argc, char** argv)
             scanHistory.push_back(scan);
         }
 
+        // Write results.
         if (configParser.outputFile)
         {
             if (scanNum > configParser.numScansDelay && scanNum < numScans-configParser.numScansDelay)
@@ -136,9 +118,6 @@ int main(int argc, char** argv)
             }
         }
 
-        // --------------------------------------------------------------------
-        // Write labels.
-        // --------------------------------------------------------------------
         if (configParser.outputLabels)
         {
             if (scanNum <= configParser.numScansDelay  || scanNum >= numScans-configParser.numScansDelay-1)
@@ -154,6 +133,11 @@ int main(int argc, char** argv)
         // Print the current time stamp to terminal.
         printf("\rScan: %d", scanNum);
         fflush(stdout);
+
+        // Print the current time stamp to terminal.
+        printf("\rScan: %d", scanNum);
+        fflush(stdout);
     }
+
     std::cout << std::endl;
 }

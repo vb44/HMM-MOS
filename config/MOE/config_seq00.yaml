@@ -1,0 +1,22 @@
+---
+# File paths
+scanPath: "/media/vb-dell/VBT7Shield/datasets/MOE/sequences/00/velodyne/"
+posePath: "/media/vb-dell/VBT7Shield/datasets/MOE/sequences/00/gt_poses.txt"
+minRange: 0
+maxRange: 120
+outputFile: false
+scanNumsToPrint: []
+outputFileName:
+outputLabels: true
+outputLabelFolder: "/media/vb-dell/VBT7Shield/datasets/MOE/sequences/00/predictions/" 
+
+# Configuration parameters.
+voxelSize: 0.2
+occupancySigma: 0.2
+beliefThreshold: 0.99
+convSize: 5
+localWindowSize: 5
+globalWindowSize: 300
+dynamicRegionWindowSize: 0
+numScansDelay: 0
+minOtsu: 3
