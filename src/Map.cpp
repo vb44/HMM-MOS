@@ -52,7 +52,7 @@ void Map::convertToKdTreeContainer(std::vector<Eigen::Vector3d> &pts)
     });
 }
 
-void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistory, DynamicRegion &staticMap)
+void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistory)
 {
     // Compute the 3D convolution score.
     tbb::parallel_for(
@@ -193,91 +193,7 @@ void Map::findDynamicVoxels(Scan &scan, boost::circular_buffer<Scan> &scanHistor
         {
             prevScanDynamicVoxels_.push_back(x);
         } 
-    }
-
-    // ------------------------------------------------------------------------
-    tbb::parallel_for(
-    tbb::blocked_range<pointsIterator>(scan.occupiedVoxels.cbegin(), scan.occupiedVoxels.cend()),
-    [&](tbb::blocked_range<pointsIterator> r)
-    {
-        for (const auto &voxel : r)
-        {
-            // Extract the point indicies.
-            int x = voxel.coeffRef(0);
-            int y = voxel.coeffRef(1);
-            int z = voxel.coeffRef(2);
-            
-            // Find the neighbours in the convolution size.
-            std::vector<Eigen::Vector3i> nPtsValid;
-            for (int i = x - edge_; i < x + edge_ + 1; ++i)
-            {
-                for (int j = y - edge_; j < y + edge_ + 1; ++j)
-                {
-                    for (int k = z - edge_; k < z + edge_ + 1; ++k)
-                    {
-                        nPtsValid.push_back({i, j, k});
-                    }
-                }
-            }
-            bool voxHasUnobservedNeighbor = false;
-            double totalScore = 0;
-            for (unsigned int i = 0; i < nPtsValid.size(); i++)
-            {
-                    // Check if the voxel exists in the map.
-                    if (map_.contains(nPtsValid[i]) &&
-                       (map_[nPtsValid[i]].currentState != 0) && 
-                       (scanNum_ - map_[nPtsValid[i]].currentStateScan < globalWinLen_))
-                    {
-                        if (staticMap.checkIfEntryExists(nPtsValid[i]) && staticMap.isHighConfidence(nPtsValid[i]))
-                        {
-                            totalScore = totalScore + 1.0;
-                        }
-                    }
-                    else
-                    {
-                        scan.setUnobservedNeighbour(voxel);
-                        totalScore = 0;
-                        break;
-                    }
-            }
-            totalScore = std::max(totalScore,0.0);
-            if (!voxHasUnobservedNeighbor)
-                scan.setDynamicBackEndScore(voxel, totalScore);
-        }
-    });
-
-    std::vector<double> scoresBackEnd;
-    for (size_t i = 0; i < scan.occupiedVoxels.size(); i++)
-    {
-        if (scan.getDynamicBackEndScore(scan.occupiedVoxels[i]) > 0)
-        {
-            scoresBackEnd.push_back(scan.getDynamicBackEndScore(scan.occupiedVoxels[i]));
-        }
-    }
-
-    if (scoresBackEnd.size() > 0)
-    {
-        // Find the dynamic voxels using the convolution scores.
-        // These are the high confidence dynamic voxel estimates.
-        Eigen::VectorXd binCounts2 = Eigen::VectorXd::Zero(nBins_);
-        Eigen::VectorXd edges2;
-        findHistogramCounts(nBins_, scoresBackEnd, binCounts2, edges2);
-        int level2 = otsu(binCounts2);    
-        double thresholdLimit2 = 0;
-        if (level2 > 0)
-        {
-            thresholdLimit2 = edges2(level2-1);
-            for (unsigned int j = 0; j < scan.occupiedVoxels.size(); j++)
-            {
-                if (scan.getDynamicBackEndScore(scan.occupiedVoxels[j]) > thresholdLimit2)
-                {
-                    scan.setDynamicHighConfidence(scan.occupiedVoxels[j]);
-                    scan.setDynamicBackEnd(scan.occupiedVoxels[j]);
-                }
-            }
-        }
-    }
-    // ------------------------------------------------------------------------   
+    }    
 }
 
 void Map::findMedianValue(Scan &scan)
