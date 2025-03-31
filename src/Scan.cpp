@@ -4,13 +4,13 @@ Scan::Scan(const ConfigParser &config)
     : voxelSize_(config.voxelSize)
     , minRangeSqr_(config.minRange*config.minRange)
     , maxRange_(config.maxRange)
+    , maxRangeSqr_(config.maxRange*config.maxRange)
     , minOtsu_(config.minOtsu)
     , outputLabelFolder_(config.outputLabelFolder)
 {
     // Compute the dimension of the convolution kernel.
     dim_ = config.maxRange/config.voxelSize * 2 + 1;
 
-    maxRangeSqr_ = maxRange_ * maxRange_;
     ptsOccupiedHistory_.resize(config.localWindowSize);
 }
 

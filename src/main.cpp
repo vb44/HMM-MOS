@@ -53,8 +53,8 @@ int main(int argc, char** argv)
     // Hardcoded parameters
     // These hmmConfig parameters stem from the design of the algorithm and are
     // not changed for the MOS task.
-    map.hmmConfig.numStates = 3;
     double epsilon = 0.005;
+    map.hmmConfig.numStates = 3;
     map.hmmConfig.stateTransitionMatrix.resize(map.hmmConfig.numStates,
                                                map.hmmConfig.numStates);
     map.hmmConfig.stateTransitionMatrix << 1.0-2*epsilon,  0.00,  0.00,
