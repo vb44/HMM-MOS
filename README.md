@@ -21,105 +21,351 @@ The following includes:
 8. [References](#references)
 
 ## Method
-<!-- The method is illustrated in the flowchart below.
+The proposed approach uses a simple three-stage process to label dynamic measurements.
+The point cloud is first voxelized, followed by a raycasting operation to determine all the observed voxels.
+Information about free and occupied space is described using a Gaussian distance field to generate the likelihood of each voxel being occupied or free.
+This information is used by the HMM filter to probabilistically update the occupancy of each voxel.
+The local map is queried to detect voxels that have transitioned occupancy.
+These changes are filtered using a spatiotemporal convolution to decrease incorrect detections and capture the entire object.
 
-![Proposed approach](/media/processFlowchart.png) -->
+![HMM-MOS Example results.](images/hmm_mos_methodology.png)
 
-The method has ten configuration parameters.
-1. ***A*** is the HMM state transition matrix (fixed for the MOS task)
-2. ***voxelSize*** is the discretization size of the voxel map
-3. ***&sigma; (occupancy)*** is the voxel occupancy likelihood standard deviation
-4. ***pMin*** is the state change detection threshold.
-5. ***m*** is the convolution kernel size.
-6. ***minOtsu*** is the minimum number of connected voxels to be identified as dynamic
-7. ***wLocal*** is the local window size used for the spatiotemporal convolution
-8. ***wDynamic*** is the dynamic window size used for retaining dynamic detections
-9. ***wGlobal*** is the global window size used for removing voxels from the map
-10. ***delay*** is the number of scans to delay the prediction by - this is useful for incorporating more information before detecting dynamic points
+The algorithm configuration parameters are displayed below.
+The same configuration set is used for all benchmark testing.
 
-There are also hardware settings:
-* ***rMax*** is the maximum radius of the point cloud. This is hardware-dependent and not a configuration parameter.
-* ***rMin*** is the minimum radius of the point cloud. This is hardware-dependent and not a configuration parameter.
+| Parameter        | Units   | Default | Purpose |
+|-----------------|--------|---------|---------|
+| &epsilon;      | prob   | 0.005   | The configuration parameter to construct the state transition matrix for updating each voxel's state given an observation using the HMM filter. The matrix encodes the transition probabilities within states and is fixed for the MOS task. |
+| &Delta;        | m      | 0.2     | Voxel resolution used for discretizing the new scans and the local map. |
+| &sigma;    | m      | 0.2     | The lumped uncertainty in estimating a voxel's occupancy given the sensor measurement and corresponding pose. The value is used for generating the measurement conditional densities. We typically set the uncertainty to reflect the uncertainty in the pose estimates. |
+| pMin | prob   | 0.99    | Probability threshold for a voxel transitioning to a state. |
+| m            | voxels | 5       | Convolution kernel size (m x m x m). |
+| &gamma;Min | voxels | 3       | A lower bound on the automatic Otsu threshold. The value corresponds to the minimum number of dynamic voxels in the kernel over the 4D convolution. |
+| wL        | scans  | 5       | Length of the local receding window for the 4D convolution computation. |
+| wG        | scans  | 300     | Length of the global receding window used to reset voxels. This is useful for handling erroneous observations and pose drift. |
+| rMax | m      | -       | The maximum sensor range used for truncating new observations and maintaining the local map size. This is also the maximum MOS range. |
+
+A step-by-step example is shown below.
+
+<!-- Demo -->
+<!-- Image Slideshow -->
+<div class="slideshow-container">
+
+  <div class="mySlides fade">
+    <img src="images/mos_step_by_step/MOS_step_by_step_gh_page-0001.jpg" style="width:100%" class="img-border">
+  </div>
+
+  <div class="mySlides fade">
+    <img src="images/mos_step_by_step/MOS_step_by_step_gh_page-0002.jpg" style="width:100%" class="img-border">
+  </div>
+
+  <div class="mySlides fade">
+    <img src="images/mos_step_by_step/MOS_step_by_step_gh_page-0003.jpg" style="width:100%" class="img-border">
+  </div>
+
+  <div class="mySlides fade">
+    <img src="images/mos_step_by_step/MOS_step_by_step_gh_page-0004.jpg" style="width:100%" class="img-border">
+  </div>
+
+  <div class="mySlides fade">
+    <img src="images/mos_step_by_step/MOS_step_by_step_gh_page-0005.jpg" style="width:100%" class="img-border">
+  </div>
+
+  <div class="mySlides fade">
+    <img src="images/mos_step_by_step/MOS_step_by_step_gh_page-0006.jpg" style="width:100%" class="img-border">
+  </div>
+
+  <div class="mySlides fade">
+    <img src="images/mos_step_by_step/MOS_step_by_step_gh_page-0007.jpg" style="width:100%" class="img-border">
+  </div>
+
+  <div class="mySlides fade">
+    <img src="images/mos_step_by_step/MOS_step_by_step_gh_page-0008.jpg" style="width:100%" class="img-border">
+  </div>
+
+  <div class="mySlides fade">
+    <img src="images/mos_step_by_step/MOS_step_by_step_gh_page-0009.jpg" style="width:100%" class="img-border">
+  </div>
+
+  <div class="mySlides fade">
+    <img src="images/mos_step_by_step/MOS_step_by_step_gh_page-0010.jpg" style="width:100%" class="img-border">
+  </div>
+
+  <div class="mySlides fade">
+    <img src="images/mos_step_by_step/MOS_step_by_step_gh_page-0011.jpg" style="width:100%" class="img-border">
+  </div>
+
+  <div class="mySlides fade">
+    <img src="images/mos_step_by_step/MOS_step_by_step_gh_page-0012.jpg" style="width:100%" class="img-border">
+  </div>
+
+  <!-- Navigation buttons -->
+  <a class="prev" onclick="plusSlides(-1)">❮</a>
+  <a class="next" onclick="plusSlides(1)">❯</a>
+</div>
+
+<br>
+
+<!-- Dots -->
+<div style="text-align:center">
+  <span class="dot" onclick="currentSlide(1)"></span>
+  <span class="dot" onclick="currentSlide(2)"></span>
+  <span class="dot" onclick="currentSlide(3)"></span>
+  <span class="dot" onclick="currentSlide(4)"></span>
+  <span class="dot" onclick="currentSlide(5)"></span>
+  <span class="dot" onclick="currentSlide(6)"></span>
+  <span class="dot" onclick="currentSlide(7)"></span>
+  <span class="dot" onclick="currentSlide(8)"></span>
+  <span class="dot" onclick="currentSlide(9)"></span>
+  <span class="dot" onclick="currentSlide(10)"></span>
+  <span class="dot" onclick="currentSlide(11)"></span>
+  <span class="dot" onclick="currentSlide(12)"></span>
+</div>
+
+<!-- Slideshow CSS -->
+<style>
+    .img-border {
+        border: 2px solid black;
+    }
+
+    .slideshow-container {
+    position: relative;
+    max-width: 800px;
+    margin: auto;
+    }
+
+    .mySlides {
+    display: none;
+    }
+
+    .prev, .next {
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 15px 20px; /* Increase padding for larger clickable area */
+    color: white;
+    font-weight: bold;
+    font-size: 30px; /* Increase font size */
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+    border-radius: 5px;
+    user-select: none;
+    z-index: 10; /* Ensure arrows are above images */
+    }
+
+    .prev {
+        left: 10px; /* Position slightly inside the edge */
+    }
+
+    .next {
+        right: 10px;
+    }
+
+    .prev:hover, .next:hover {
+        background-color: rgba(0, 0, 0, 0.8); /* Darker on hover */
+    }
+
+    .dot {
+    cursor: pointer;
+    height: 10px;
+    width: 10px;
+    margin: 0 2px;
+    background-color: #bbb;
+    border-radius: 50%;
+    display: inline-block;
+    transition: background-color 0.6s ease;
+    }
+    .active, .dot:hover {
+    background-color: #717171;
+    }
+
+
+</style>
+<script>
+  let slideIndex = 1;
+  showSlides(slideIndex);
+
+  function plusSlides(n) {
+    showSlides(slideIndex += n);
+  }
+
+  function currentSlide(n) {
+    showSlides(slideIndex = n);
+  }
+
+  function showSlides(n) {
+    let i;
+    let slides = document.getElementsByClassName("mySlides");
+    let dots = document.getElementsByClassName("dot");
+    if (n > slides.length) {slideIndex = 1}
+    if (n < 1) {slideIndex = slides.length}
+    for (i = 0; i < slides.length; i++) {
+      slides[i].style.display = "none";  
+    }
+    for (i = 0; i < dots.length; i++) {
+      dots[i].className = dots[i].className.replace(" active", "");
+    }
+    slides[slideIndex-1].style.display = "block";  
+    dots[slideIndex-1].className += " active";
+  }
+</script>
+
 
 ## Benchmark Datasets
 We test our algorithm using the following open-source datasets. Click the links below to see the download instructions.
+
 * [HeLiMOS](https://sites.google.com/view/helimos)
-    * The dataset is based on the KAIST05 sequence of the [HeliPR dataset](https://sites.google.com/view/heliprdataset) recorded by four different LiDARs. The annotated lables are used for evaluation.  We estimate the LiDAR pose using [SiMpLE](https://github.com/vb44/SiMpLE), with the estimated poses provided under the *datasetPoses* folder in this repository.
+    The HeLiMOS dataset is based on the KAIST05 sequence of the [HeliPR dataset](https://sites.google.com/view/heliprdataset) recorded by four different LiDARs.
+    We estimate the LiDAR pose using [SiMpLE](https://github.com/vb44/SiMpLE), with the estimated poses provided under the *datasetPoses* folder in this repository.
+    The performance of the proposed algorithm is shown in the video below, followed by the benchmark results.
+    
+    [HeLiMOS Demo](https://www.youtube.com/embed/FH-9UKxZl8s)
+    
+    The benchmarking results are shown below.
 
-    <div style="display: flex; justify-content: center;">
+    | **Method**                    | **L (%)**  | **A (%)**  | **O (%)**  | **V (%)**  |
+    |--------------------------------|----------:|----------:|----------:|----------:|
+    | 4DMOS, online                  | 52.1      | 54.0      | 64.2      | 4.7       |
+    | MapMOS, scan                   | **58.9**  | 63.2      | **81.4**  | 4.3       |
+    | This paper, Δ=0.20 m           | 45.2      | 63.9      | 69.2      | 35.9      |
+    | This paper, Δ=0.25 m           | 51.9      | **69.0**  | 74.2      | **36.0**  |
+    | **Delayed Results**            |           |           |           |           |
+    | 4DMOS, delayed                 | 59.0      | 58.3      | 70.4      | 5.4       |
+    | MapMOS, volume                 | **62.7**  | 66.6      | **82.9**  | 5.8       |
 
-    | **Method**                          | **L**  | **A**  | **O**  | **V**  | **Avg** |
-    |-------------------------------------|--------|--------|--------|--------|---------|
-    | 4DMOS, online [Mersch2022]          | 52.1   | 54.0   | 64.2   | 4.7    | 43.7    |
-    | 4DMOS, delayed [Mersch2022]         | 59.0   | 58.3   | 70.4   | 5.4    | 48.3    |
-    | MapMOS, Scan [Mersch2023]           | 58.9   | 63.2   | 81.4   | 4.3    | 52.0    |
-    | MapMOS, Volume [Mersch2023]         | **62.7**| 66.6  | **82.9**| 5.8    | 54.5   |
-    | **HMM-MOS**, Δ=0.25m                | 51.3   | 69.8   | 75.0   | 35.0   | 57.8    |
-    | **HMM-MOS**, delayed (10 scans)     | 57.6   | **70.0**| 73.4  | **53.9**| **63.7**|
-
-    </div>
-
+    The ground truth labels are downloaded from HeLiMOS.
 
 * [Sipailou Campus](https://github.com/xieKKKi/MotionBEV)
-    * The dataset consists of eight sequences using a Livox Avia mounted to a mobile robot. The sequences are available in the same format as Semantic-KITTI using *.bin* files and corresponding ground truth in *.label* files. The provided sensor pose estimates are used.
+    The Sipailou Campus dataset consists of eight sequences using a Livox Avia mounted to an unmanned ground vehicle traversing the Southeast University Sipailou Campus.
+    The sequences are available in the same format as Semantic-KITTI using *.bin* files and corresponding ground truth in *.label* files.
+    The provided sensor pose estimates are used.
 
-    <div style="display: flex; justify-content: center;">
+    [Sipailou Demo](https://www.youtube.com/embed/IOP0yN4GBJo)
+    
+    The benchmarking results are shown below.
 
-    | **Method**                           | **IoU (%) (Validation)** | **IoU (%) (Test)** |
-    |--------------------------------------|--------------------------|--------------------|
-    | LMNet [Chen2021]                     | 5.37                     | 6.88               |
-    | MotionSeg3D [Sun2022]                | 6.83                     | 6.72               |
-    | 4DMOS [Mersch2022]                   | 78.54                    | 82.30              |
-    | Motion-BEV [Zhou2023]                | 50.44                    | 52.02              |
-    | Motion-BEV-h [Zhou2023]              | 70.94                    | 71.51              |
-    | **HMM-MOS**, Δ=0.25m                 | **85.60**                | **87.00**          |
-
-    </div>
+    | **Method**                    | **IoU Validation (%)** | **IoU Test (%)** |
+    |--------------------------------|-----------------------:|-----------------:|
+    | LMNet                          | 5.4                   | 6.9              |
+    | MotionSeg3D                    | 6.8                   | 6.7              |
+    | 4DMOS                          | 78.5                  | 82.3             |
+    | Motion-BEV                     | 50.4                  | 52.0             |
+    | Motion-BEV-h                   | 70.9                  | 71.5             |
+    | This paper, Δ=0.25 m           | **84.9**              | 86.0             |
+    | This paper, Δ=0.20 m           | 84.8                  | **86.1**         |
 
 
 * [Apollo Dataset](https://www.ipb.uni-bonn.de/html/projects/apollo_dataset/LiDAR-MOS.zip)
-    * Data sourced from [here](https://github.com/PRBonn/MapMOS?tab=readme-ov-file#downloads). The dataset consists of multiple sequences recorded from a vehicle in an urban environment. The LiDAR pose estimates are provided at *benchmarking/datasetPoses/Apollo*.
+    The Apollo Southbay dataset consists of multiple sequences recorded from a vehicle in an urban environment.
+    We estimate the LiDAR pose using [SiMpLE](https://github.com/vb44/SiMpLE), with the estimated poses provided under the *datasetPoses* folder in this repository.
+    The performance of the proposed algorithm is shown in the video below, followed by the benchmark results.
 
-    <div style="display: flex; justify-content: center;">
+    [Apollo Demo](https://www.youtube.com/embed/M2Wn8RvJ9CY)
 
-    | **Method**                           | **IoU (%)** |
-    |--------------------------------------|-------------|
-    | LMNet [Chen2021]                     | 13.7        |
-    | MotionSeg3D, v1 [Sun2022]            | 6.5         |
-    | MotionSeg3D, v2 [Sun2022]            | 8.8         |
-    | 4DMOS, delayed [Mersch2022]          | 70.9        |
-    | 4DMOS, online [Mersch2022]           | 68.7        |
-    | MapMOS, Scan [Mersch2023]            | 79.2        |
-    | MapMOS, Volumetric [Mersch2023]      | **81.7**    |
-    | **HMM-MOS**, Δ=0.25m                 | **81.7**    |
+    The benchmarking results are shown below.
 
-    </div>
+    | **Method**                        | **IoU Validation (%)** |
+    |------------------------------------|-----------------------:|
+    | LMNet                              | 13.7                  |
+    | MotionSeg3D, v1                    | 6.5                   |
+    | MotionSeg3D, v2                    | 8.8                   |
+    | 4DMOS, online                      | 68.7                  |
+    | MapMOS, scan                       | **79.2**              |
+    | This paper, Δ=0.20 m               | 76.2                  |
+    | This paper, Δ=0.25 m               | 75.8                  |
+    | **Delayed Results**                |                       |
+    | 4DMOS, delayed                     | 70.9                  |
+    | MapMOS, volumetric                 | **81.7**              |
+
+    The *semantic-kitti-api* tools are used to evaluate the results similar to the instructions for the HeLiMOS dataset.
 
 * [Urban Dynamic Objects LiDAR Dataset (DOALS)](https://projects.asl.ethz.ch/datasets/doku.php?id=doals)
-    * Download instructions are also available on the [open-source Dynablox page](https://github.com/ethz-asl/dynablox?tab=readme-ov-file#Datasets). The dataset consists of eight sequences recorded with a handheld LiDAR in indoor and outdoor environments. The dataset is recorded in rosbags (see **note 1** below). We estimate the LiDAR pose using [SiMpLE](https://github.com/vb44/SiMpLE).
+    Download instructions are also available on the [open-source Dynablox page](https://github.com/ethz-asl/dynablox?tab=readme-ov-file#Datasets).
+    
+    The DOALS dataset consists of eight sequences recorded at four distinct locations (two sequences per location).
+    The sequences consist of a handheld Ouster OS1-64 LiDAR in human-centric environments.
 
-    <div style="display: flex; justify-content: center;">
+    The dataset can be downloaded from [here](https://projects.asl.ethz.ch/datasets/doku.php?id=doals), available as ROS1 bags.
+    For use with HMM-MOS, the point cloud data is converted to the KITTI *.bin* files.
+    The deskewed point clouds are used to compensate for the handheld motion. 
+    We estimate the LiDAR pose using [SiMpLE](https://github.com/vb44/SiMpLE).
+    Comparison is made to other methods also using the deskewed point clouds.
 
-    | **Method**                             | **ST**  | **SV**  | **HG**  | **ND**  |
-    |----------------------------------------|---------|---------|---------|---------|
-    | DOALS-3DMiniNet [Pfreundschuh2021]     | 84.0    | 82.0    | 82.0    | 80.0    |
-    | 4DMOS [Mersch2022]                     | 38.8    | 50.6    | 71.1    | 40.2    |
-    | LMNet [Chen2021] (Original)            | 6.0     | 7.5     | 4.6     | 3.0     |
-    | LMNet [Chen2021] (Refit)               | 19.9    | 18.9    | 27.4    | 40.1    |
-    | Dynablox [Schmid2023]                  | **86.2**| **83.2**| 84.1    | **81.6**|
-    | **HMM-MOS**, Δ=0.20m                    | 82.7    | 80.8    | **85.9**| 81.4    |
-    | LC Free Space [Modayil2008] (20m)      | 48.7    | 31.9    | 24.7    | 17.7    |
-    | ST Normals [Falque2023] (20m)          | 80.0    | 81.0    | 85.0    | 76.0    |
-    | Dynablox [Schmid2023] (20m)            | 87.3    | **87.8**| 86.0    | 83.1    |
-    | **HMM-MOS**, Δ=0.20m (20m)              | **88.9**| 84.7    | **87.3**| **83.5**|
+    Each sequence is accompanied by a *indices.csv* file that contains the indices of the dynamic elements for ten point clouds.
+    Any pedestrian-appearing point is labelled as dynamic, with no discrimination if they are moving or not.
+    An evaluation tool is provided in *benchmarking/evaluation*.
 
-    </div>
+    [DOALS Demo](https://www.youtube.com/embed/v-oYnE3rvcg)
+
+    The benchmarking results are shown below.
+
+    | **Method**                          | **ST (%)** | **SV (%)** | **HG (%)** | **ND (%)** |
+    |--------------------------------------|----------:|----------:|----------:|----------:|
+    | DOALS-3DMiniNet                      | 84.0      | 82.0      | 82.0      | 80.0      |
+    | 4DMOS                                | 38.8      | 50.6      | 71.1      | 40.2      |
+    | LMNet (original)                     | 6.0       | 7.5       | 4.6       | 3.0       |
+    | LMNet (refit)                        | 19.9      | 18.9      | 27.4      | 40.1      |
+    | Dynablox                             | **86.2**  | **83.2**  | 84.1      | **81.6**  |
+    | This paper, Δ=0.20 m                 | 81.9      | 81.6      | **85.6**  | 80.9      |
+    | This paper, Δ=0.25 m                 | 81.7      | 81.1      | 82.2      | 81.1      |
+    | **20 m MOS Detection Range**         |           |           |           |           |
+    | LC Free Space (20 m)                 | 48.7      | 31.9      | 24.7      | 17.7      |
+    | ST Normals (20 m)                    | 80.0      | 81.0      | 85.0      | 76.0      |
+    | Dynablox (20 m)                      | 87.3      | **87.8**  | 86.0      | **83.1**  |
+    | This paper, Δ=0.20 m (20 m)          | **88.7**  | 84.0      | **87.3**  | 82.9      |
+    | This paper, Δ=0.25 m (20 m)          | 86.9      | 84.1      | 83.6      | 82.4      |
+
+* [MOE Dataset](https://github.com/DeepDuke/MOE-Dataset)
+    The Moving Event dataset (MOE) provides a series of simulated and real-life sequences consisting of various diverse dynamic objects aimed at improving moving event detection using LiDAR sensors.
+    Sequence 00 is a mobile robot exploring an indoor apartment with humans as dynamic objects in the Webots simulator, sequence 01 is an outdoor city scene traversed by a vehicle in the Carla simulator, and sequence 02 is recorded in a crowded pedestrian setting in the Gazebo simulator.
+
+    The provided pose estimates are used.
+    The performance of the proposed algorithm is shown in the video below, followed by the benchmark results.
+
+    [MOE Demo](https://www.youtube.com/embed/rJeFaWwSrrU)
 
 
-* [Dynablox](https://github.com/ethz-asl/dynablox?tab=readme-ov-file#Datasets)
-    * This qualitative dataset was released by Dynablox. The datasets consist of eight sequences recorded with a handheld LiDAR, capturing the dynamic motion of various objects in complex environments. The dataset is recorded in rosbags (see **note 1** below). We estimate the LiDAR pose using [SiMpLE](https://github.com/vb44/SiMpLE).
+    | **Method**                  | **00**  | **01**  | **02**  |
+    |-----------------------------|--------|--------|--------|
+    | Removert                    | 29.7   | 2.8    | 42.1   |
+    | ERASOR                      | 37.8   | 2.8    | 62.7   |
+    | Octomap                     | 32.8   | 3.1    | 65.2   |
+    | Dynablox                    | 32.0   | 19.5   | 49.2   |
+    | DOD                         | 78.6   | 14.2   | 59.5   |
+    | M-detector                  | 30.5   | 17.4   | 4.4    |
+    | MotionBEV                   | 0.2    | 5.5    | 6.9    |
+    | InsMOS                      | 49.5   | 28.2   | 37.9   |
+    | 4DMOS, online               | 71.2   | 26.1   | 66.0   |
+    | **This paper, Δ=0.20m**     | **80.0** | 38.2   | **81.9** |
+    | **This paper, Δ=0.25m**     | 70.6   | **40.5** | 77.6   |
+    | 4DMOS, delayed          | 78.0   | 25.7   | 76.2   |
+    | MapMOS, volume          | 27.8   | **50.3** | 78.7   |
 
-**Note 1**: The HMM-MOS implementation provided here is designed to work with scan files in the *.bin* KITTI format with the sensor pose of each scan provided in a poses.txt file which is also in the KITTI format (nx12). To test the DOALS and Dynablox datasets, we converted each rosbag to a sequence of deskewed *.bin* scan files and estimated the sensor pose using SiMpLE to provide accurate odometry. Comparison is made to other methods also using the deskewed point clouds.
+* [M-Detector](https://drive.google.com/drive/folders/1ASNfrjZB7n9Q-nB4Pm2IwvArFWnTcFAj)
+    M-Detector labels three opensource datasets and release a self-created dataset.
+    * The Avia dataset provides 45 short indoor sequences capturing small flying objects with a static Livox Avia.
+    * The NuScenes dataset provides ten short sequences of a vehicle driving in an urban environment. Labels are only provided at 2 Hz. Majority of the dynamic detections are captured on the vehicle itself, skewing the evaluation results. 
+    * The KITTI dataset provides 20 short sequences of a vehicle driving in an urban environment. Most dynamic objects are other vehicles.
+    * The Waymo dataset provides 44 short sequences of a vehicle driving in an urban environment. Most dynamic objects are other vehicles.
+
+    For the opensource datasets, measurements corresponding to an object with a velocity greater than a threshold are labelled as dynamic; 0.5 m/s for pedestrians and 1.0 m/s for vehicles.
+
+    [M-Detector Demo](https://www.youtube.com/embed/Bp6rYDwyc5A)
+
+    The benchmarking results are shown below.
+    Evaluation on the M-detector datasets with best results in bold. Results for other methods are as documented by Wu (2024).
+
+    | Method                              | Avia  | KITTI | NuScenes | Waymo |
+    |-------------------------------------|------:|------:|---------:|------:|
+    | LMNet-1                             |  0.7  |  55.4 |   11.1   |  4.2  |
+    | LMNet-8                             |  0.2  |  63.5 |    3.3   |  2.5  |
+    | SMOS                                | 15.1  |  20.5 |    8.2   |  4.3  |
+    | M-detector (point-out)              | 62.9  |  57.0 |   85.5   | 64.0  |
+    | M-detector (frame-out)              | **91.6**  |  **74.6**  |  **90.2**  |  **74.6**  |
+    | This paper, Δ = 0.20 m              | **94.0**  |  64.4 |   86.7   | 68.3  |
+    | This paper, Δ = 0.25 m              | 90.2  |  63.7 |   89.1   | 69.9  |
+
+
 
 ## Hardware and Dependencies
 This implementation has been tested on Ubuntu 20.04.5/6 LTS (Focal Fossa) with an Intel Core i7-10700K CPU @ 3.80GHz x 16 and 62.5 GiB memory.
@@ -227,7 +473,7 @@ mkdir build && cd build
 
 Run CMake.
 ```bash
-cmake ../src
+cmake ../
 ```
 
 Make the executable.
@@ -264,8 +510,6 @@ beliefThreshold: 0.99           # probability [0-1]
 convSize: 5                     # odd integer
 localWindowSize: 3              # local window size [#]
 globalWindowSize: 300           # global window size [#]
-dynamicRegionWindowSize: 100    # global window size [#]
-numScansDelay: 0                # set to zero for online performance [#]
 minOtsu: 3                      # min dynamic voxels in spatiotemporal convolution [#]
 ```   
 
@@ -328,7 +572,7 @@ split: # sequence numbers
     - 20
     - 21
 ```
-3. Run the evaluation for sequences 00 and 03.
+3. Run the evaluation for sequences 03.
 ```bash
 python3 evaluate_mos.py --dataset /pathToFolder/
 ```
@@ -352,7 +596,7 @@ labels:  3164
 predictions:  3164
 Evaluating sequences: 10% 20% 30% 40% 50% 60% 70% 80% 90% ********************************************************************************
 below can be copied straight for paper table
-iou_moving: 0.539
+iou_moving: 0.360
 
 ```
 
@@ -419,7 +663,7 @@ labels:  3191
 predictions:  3191
 Evaluating sequences: 10% 20% 30% 40% 50% 60% 70% 80% 90% ********************************************************************************
 below can be copied straight for paper table
-iou_moving: 0.856
+iou_moving: 0.849
 ```
 5. Run the test evaluation.
 ```bash
@@ -444,7 +688,7 @@ labels:  6201
 predictions:  6201
 Evaluating sequences: 10% 20% 30% 40% 50% 60% 70% 80% 90% ********************************************************************************
 below can be copied straight for paper table
-iou_moving: 0.870
+iou_moving: 0.861
 ```
 
 ### DOALS Evaluation
@@ -486,18 +730,18 @@ An example output of the DOALS Hauptgebaeude sequence 1 20m range evaluation is 
 |-------|-----------|-------|
 |  IoU  | Precision | Recall|
 |-------|-----------|-------|
-| 83.68 |   96.99   | 85.91 | 
-| 84.27 |   91.50   | 91.42 | 
-| 96.89 |   99.41   | 97.45 | 
-| 92.83 |   99.40   | 93.35 | 
-| 85.91 |   99.53   | 86.26 | 
-| 86.22 |   98.48   | 87.39 | 
-| 95.40 |   99.35   | 96.00 | 
-| 87.70 |   98.06   | 89.25 | 
-| 81.92 |   94.48   | 86.04 | 
-| 97.33 |   99.77   | 97.55 | 
+| 84.34 |   97.11   | 86.52 | 
+| 79.07 |   85.94   | 90.83 | 
+| 97.00 |   99.34   | 97.63 | 
+| 89.88 |   99.35   | 90.41 | 
+| 86.40 |   99.43   | 86.83 | 
+| 89.10 |   98.77   | 90.10 | 
+| 95.49 |   99.33   | 96.11 | 
+| 86.59 |   97.94   | 88.19 | 
+| 84.22 |   97.44   | 86.12 | 
+| 96.14 |   99.72   | 96.41 | 
 |-------|-----------|-------|
-Mean IOU: 89.22
+Mean IOU: 88.82
 ```
 
 ## References
