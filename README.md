@@ -8,19 +8,13 @@ The workshop paper ([found here!](https://arxiv.org/abs/2410.18638)) was accepte
 [Click here for a demo!](https://github.com/user-attachments/assets/8ac52292-4b8b-4f97-a4ef-c546965338b5)
 
 This is the open-source implementation of the proposed approach. 
-The code is portable and easy to understand and modify.
+The code is portable, easy to understand and modify.
 
-The following includes:
-1. [A summary of the MOS approach](#method)
-2. [Benchmark datasets](#benchmark-datasets)
-3. [The hardware requirements and dependencies installation](#hardware-and-dependencies)
-4. [Installation of the HMM-MOS repository](#installation)
-5. [An example of using HMM-MOS](#example)
-6. [Sample results interpretation](#sample-results-interpretation)
-7. [Results on different operating systems and processors](#results-on-different-operating-systems)
-8. [References](#references)
+**Click on each arrow below to reveal the content!**
 
-## Method
+<details>
+<summary><h2>Method</h2></summary>
+    
 The proposed approach uses a simple three-stage process to label dynamic measurements.
 The point cloud is first voxelized, followed by a raycasting operation to determine all the observed voxels.
 Information about free and occupied space is described using a Gaussian distance field to generate the likelihood of each voxel being occupied or free.
@@ -45,7 +39,10 @@ The same configuration set is used for all benchmark testing.
 | wG        | scans  | 300     | Length of the global receding window used to reset voxels. This is useful for handling erroneous observations and pose drift. |
 | rMax | m      | -       | The maximum sensor range used for truncating new observations and maintaining the local map size. This is also the maximum MOS range. |
 
-## Benchmark Datasets
+</details>
+<details>
+<summary><h2>Benchmark Datasets</h2></summary>
+    
 We test our algorithm using the following open-source datasets. Click the links below to see the download instructions.
 
 * [HeLiMOS](https://sites.google.com/view/helimos)
@@ -126,7 +123,7 @@ We test our algorithm using the following open-source datasets. Click the links 
     Comparison is made to other methods also using the deskewed point clouds.
 
     Each sequence is accompanied by a *indices.csv* file that contains the indices of the dynamic elements for ten point clouds.
-    Any pedestrian-appearing point is labelled as dynamic, with no discrimination if they are moving or not.
+    Any pedestrian-appearing point is labelled as dynamic, with no discrimination whether they are moving or not.
     An evaluation tool is provided in *benchmarking/evaluation*.
 
     [DOALS Demo](https://www.youtube.com/embed/v-oYnE3rvcg)
@@ -176,13 +173,13 @@ We test our algorithm using the following open-source datasets. Click the links 
     | MapMOS, volume          | 27.8   | **50.3** | 78.7   |
 
 * [M-Detector](https://drive.google.com/drive/folders/1ASNfrjZB7n9Q-nB4Pm2IwvArFWnTcFAj)
-    M-Detector labels three opensource datasets and release a self-created dataset.
+    M-Detector labels three open-source datasets and releases a self-created dataset.
     * The Avia dataset provides 45 short indoor sequences capturing small flying objects with a static Livox Avia.
-    * The NuScenes dataset provides ten short sequences of a vehicle driving in an urban environment. Labels are only provided at 2 Hz. Majority of the dynamic detections are captured on the vehicle itself, skewing the evaluation results. 
+    * The NuScenes dataset provides ten short sequences of a vehicle driving in an urban environment. Labels are only provided at 2 Hz. The majority of the dynamic detections are captured on the vehicle itself, skewing the evaluation results. 
     * The KITTI dataset provides 20 short sequences of a vehicle driving in an urban environment. Most dynamic objects are other vehicles.
     * The Waymo dataset provides 44 short sequences of a vehicle driving in an urban environment. Most dynamic objects are other vehicles.
 
-    For the opensource datasets, measurements corresponding to an object with a velocity greater than a threshold are labelled as dynamic; 0.5 m/s for pedestrians and 1.0 m/s for vehicles.
+    For the open-source datasets, measurements corresponding to an object with a velocity greater than a threshold are labelled as dynamic, 0.5 m/s for pedestrians and 1.0 m/s for vehicles.
 
     [M-Detector Demo](https://www.youtube.com/embed/Bp6rYDwyc5A)
 
@@ -199,9 +196,10 @@ We test our algorithm using the following open-source datasets. Click the links 
     | This paper, Δ = 0.20 m              | **94.0**  |  64.4 |   86.7   | 68.3  |
     | This paper, Δ = 0.25 m              | 90.2  |  63.7 |   89.1   | 69.9  |
 
-
-
-## Hardware and Dependencies
+</details>
+<details>
+<summary><h2>Hardware and Dependencies</h2></summary>
+    
 This implementation has been tested on Ubuntu 20.04.5/6 LTS (Focal Fossa) with an Intel Core i7-10700K CPU @ 3.80GHz x 16 and 62.5 GiB memory.
 HMM-MOS uses a few open-source libraries for reading the algorithm configuration file, Kd-Trees, hash maps, matrix operations, and CPU threading.
 The installation instructions are detailed below.
@@ -292,8 +290,10 @@ sudo make install
 
 Alternative options for any of the libraries can be used if desired.
 The code is easy to change.
-
-## Installation
+</details>
+<details>
+<summary><h2>HMM-MOS Installation</h2></summary>
+    
 Clone the repository.
 ```bash
 git clone https://github.com/vb44/HMM-MOS.git
@@ -315,7 +315,6 @@ Make the executable.
 make
 ```
 
-## Example
 The code only works with *.bin* files in the KITTI format.
 However, the code is very easy to modify to suit the desired inputs and outputs.
 When compiled, the HMM-MOS algorithm is run using a *.yaml* algorithm configuration file as shown below.
@@ -346,10 +345,12 @@ localWindowSize: 3              # local window size [#]
 globalWindowSize: 300           # global window size [#]
 minOtsu: 3                      # min dynamic voxels in spatiotemporal convolution [#]
 ```   
-
-## Sample Results Interpretation
+</details>
+<details>
+<summary><h2>Sample Results Interpretation</h2></summary>
+    
 MOS results can be saved in,
-* a *single file* with point cloud indicies for each scan per row for evaluation with *DOALS* ground truth, or,
+* a *single file* with point cloud indices for each scan per row for evaluation with *DOALS* ground truth, or,
 * *.label* files from Semantic KITTI for evaluation with *Sipailou Campus* and *Apollo* datasets.
 
 ### HeLiMOS Evaluation
@@ -577,6 +578,44 @@ An example output of the DOALS Hauptgebaeude sequence 1 20m range evaluation is 
 |-------|-----------|-------|
 Mean IOU: 88.82
 ```
+</details>
+
+<details>
+<summary><h2>Limitations</h2></summary>
+    
+The limitations, or scenarios of degraded performance, of the proposed algorithm are discussed here.
+These include (I) handling LiDAR returns from reflective surfaces, (II) capturing dynamic objects moving into unobserved space, and (III) handling large pose estimation errors.
+
+**(I) Handling returns from reflective surfaces**
+
+LiDARs have known sensing limitations from reflective surfaces such as windows.
+The proposed algorithm is not appearance-based, and any *moving* measurement relative to a fixed frame is labelled as dynamic.
+The DOALS dataset has a few occurrences where this occurs.
+Two such examples from the Niederdorf and Shopville sequences are shown below.
+Such scenarios drastically increase the false positives, decreasing the resulting IoU value.
+
+*Niederdorf scan 1696*
+![HMM-MOS Example results.](images/window_example_Niederdorf.jpg)
+
+<br>
+
+*Shopville scan 879*
+![HMM-MOS Example results.](images/window_example_Shopville.jpg)
+
+<br>
+
+**(II) Dynamic objects moving into unobserved space**
+
+Objects moving into unobserved space are unable to be captured.
+It is for this reason that state-of-the-art algorithms such as 4DMOS and MapMOS provide a delayed result.
+This allows information from *n* scans ahead of the current scan to be included before the prediction is made (e.g. *n* = 10).
+
+**(III) Handling large pose estimation errors**
+
+The sensor's pose is used to locate sensor measurements in the map frame.
+Large errors in the sensor's pose incorrectly transform points and lead to erroneous dynamic detections.
+Pose drift from SLAM solutions is not an issue as a global receding window is used to maintain the local map, with any voxels outside the maximum sensor range and those that have not been observed for the last *wG* scans are removed.
+</details>
 
 ## References
 [1] [eigen library](https://eigen.tuxfamily.org/dox/GettingStarted.html)
