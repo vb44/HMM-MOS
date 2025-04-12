@@ -10,10 +10,18 @@ The workshop paper ([found here!](https://arxiv.org/abs/2410.18638)) was accepte
 This is the open-source implementation of the proposed approach. 
 The code is portable, easy to understand and modify.
 
-**Click on each arrow below to reveal the content!**
+The following includes:
+1. [A summary of the MOS approach](#method)
+2. [Benchmark datasets](#benchmark-datasets)
+3. [The hardware requirements and dependencies installation](#hardware-and-dependencies)
+4. [Installation of the HMM-MOS repository](#installation)
+5. [An example of using HMM-MOS](#example)
+6. [Sample results interpretation](#sample-results-interpretation)
+7. [Results on different operating systems and processors](#results-on-different-operating-systems)
+8. [Limitations](#limitations)
+9. [References](#references)
 
-<details>
-<summary><h2>Method</h2></summary>
+## Method
     
 The proposed approach uses a simple three-stage process to label dynamic measurements.
 The point cloud is first voxelized, followed by a raycasting operation to determine all the observed voxels.
@@ -39,9 +47,7 @@ The same configuration set is used for all benchmark testing.
 | wG        | scans  | 300     | Length of the global receding window used to reset voxels. This is useful for handling erroneous observations and pose drift. |
 | rMax | m      | -       | The maximum sensor range used for truncating new observations and maintaining the local map size. This is also the maximum MOS range. |
 
-</details>
-<details>
-<summary><h2>Benchmark Datasets</h2></summary>
+## Benchmark Datasets
     
 We test our algorithm using the following open-source datasets. Click the links below to see the download instructions.
 
@@ -196,9 +202,7 @@ We test our algorithm using the following open-source datasets. Click the links 
     | This paper, Δ = 0.20 m              | **94.0**  |  64.4 |   86.7   | 68.3  |
     | This paper, Δ = 0.25 m              | 90.2  |  63.7 |   89.1   | 69.9  |
 
-</details>
-<details>
-<summary><h2>Hardware and Dependencies</h2></summary>
+## Hardware and Dependencies
     
 This implementation has been tested on Ubuntu 20.04.5/6 LTS (Focal Fossa) with an Intel Core i7-10700K CPU @ 3.80GHz x 16 and 62.5 GiB memory.
 HMM-MOS uses a few open-source libraries for reading the algorithm configuration file, Kd-Trees, hash maps, matrix operations, and CPU threading.
@@ -290,9 +294,8 @@ sudo make install
 
 Alternative options for any of the libraries can be used if desired.
 The code is easy to change.
-</details>
-<details>
-<summary><h2>HMM-MOS Installation</h2></summary>
+
+## HMM-MOS Installation
     
 Clone the repository.
 ```bash
@@ -345,9 +348,8 @@ localWindowSize: 3              # local window size [#]
 globalWindowSize: 300           # global window size [#]
 minOtsu: 3                      # min dynamic voxels in spatiotemporal convolution [#]
 ```   
-</details>
-<details>
-<summary><h2>Sample Results Interpretation</h2></summary>
+
+## Sample Results Interpretation
     
 MOS results can be saved in,
 * a *single file* with point cloud indices for each scan per row for evaluation with *DOALS* ground truth, or,
@@ -578,10 +580,8 @@ An example output of the DOALS Hauptgebaeude sequence 1 20m range evaluation is 
 |-------|-----------|-------|
 Mean IOU: 88.82
 ```
-</details>
 
-<details>
-<summary><h2>Limitations</h2></summary>
+## Limitations
     
 The limitations, or scenarios of degraded performance, of the proposed algorithm are discussed here.
 These include (I) handling LiDAR returns from reflective surfaces, (II) capturing dynamic objects moving into unobserved space, and (III) handling large pose estimation errors.
@@ -615,7 +615,6 @@ This allows information from *n* scans ahead of the current scan to be included 
 The sensor's pose is used to locate sensor measurements in the map frame.
 Large errors in the sensor's pose incorrectly transform points and lead to erroneous dynamic detections.
 Pose drift from SLAM solutions is not an issue as a global receding window is used to maintain the local map, with any voxels outside the maximum sensor range and those that have not been observed for the last *wG* scans are removed.
-</details>
 
 ## References
 [1] [eigen library](https://eigen.tuxfamily.org/dox/GettingStarted.html)
