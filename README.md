@@ -56,7 +56,7 @@ We test our algorithm using the following open-source datasets. Click the links 
     We estimate the LiDAR pose using [SiMpLE](https://github.com/vb44/SiMpLE), with the estimated poses provided under the *datasetPoses* folder in this repository.
     The performance of the proposed algorithm is shown in the video below, followed by the benchmark results.
     
-    [HeLiMOS Demo](https://www.youtube.com/embed/FH-9UKxZl8s)
+    [![HeLiMOS Demo](images/DemoHelimos.png)](https://www.youtube.com/embed/FH-9UKxZl8s)
     
     The benchmarking results are shown below.
 
@@ -77,7 +77,7 @@ We test our algorithm using the following open-source datasets. Click the links 
     The sequences are available in the same format as Semantic-KITTI using *.bin* files and corresponding ground truth in *.label* files.
     The provided sensor pose estimates are used.
 
-    [Sipailou Demo](https://www.youtube.com/embed/IOP0yN4GBJo)
+    [![Sipailou Demo](images/DemoCampus.png)](https://www.youtube.com/embed/IOP0yN4GBJo)
     
     The benchmarking results are shown below.
 
@@ -97,7 +97,7 @@ We test our algorithm using the following open-source datasets. Click the links 
     We estimate the LiDAR pose using [SiMpLE](https://github.com/vb44/SiMpLE), with the estimated poses provided under the *datasetPoses* folder in this repository.
     The performance of the proposed algorithm is shown in the video below, followed by the benchmark results.
 
-    [Apollo Demo](https://www.youtube.com/embed/M2Wn8RvJ9CY)
+    [![Apollo Demo](images/DemoApollo.png)](https://www.youtube.com/embed/M2Wn8RvJ9CY)
 
     The benchmarking results are shown below.
 
@@ -132,7 +132,7 @@ We test our algorithm using the following open-source datasets. Click the links 
     Any pedestrian-appearing point is labelled as dynamic, with no discrimination whether they are moving or not.
     An evaluation tool is provided in *benchmarking/evaluation*.
 
-    [DOALS Demo](https://www.youtube.com/embed/v-oYnE3rvcg)
+    [![DOALS Demo](images/DemoDoals.png)](https://www.youtube.com/embed/v-oYnE3rvcg)
 
     The benchmarking results are shown below.
 
@@ -157,10 +157,10 @@ We test our algorithm using the following open-source datasets. Click the links 
     Sequence 00 is a mobile robot exploring an indoor apartment with humans as dynamic objects in the Webots simulator, sequence 01 is an outdoor city scene traversed by a vehicle in the Carla simulator, and sequence 02 is recorded in a crowded pedestrian setting in the Gazebo simulator.
 
     The provided pose estimates are used.
-    The performance of the proposed algorithm is shown in the video below, followed by the benchmark results.
 
-    [MOE Demo](https://www.youtube.com/embed/rJeFaWwSrrU)
-
+     [![MOE Demo](images/DemoMoe.png)](https://www.youtube.com/embed/rJeFaWwSrrU)
+  
+    The benchmarking results are shown below.
 
     | **Method**                  | **00**  | **01**  | **02**  |
     |-----------------------------|--------|--------|--------|
@@ -187,7 +187,7 @@ We test our algorithm using the following open-source datasets. Click the links 
 
     For the open-source datasets, measurements corresponding to an object with a velocity greater than a threshold are labelled as dynamic, 0.5 m/s for pedestrians and 1.0 m/s for vehicles.
 
-    [M-Detector Demo](https://www.youtube.com/embed/Bp6rYDwyc5A)
+    [![M-Detector Demo](images/DemoMdetector.png)](https://www.youtube.com/embed/Bp6rYDwyc5A)
 
     The benchmarking results are shown below.
     Evaluation on the M-detector datasets with best results in bold. Results for other methods are as documented by Wu (2024).
